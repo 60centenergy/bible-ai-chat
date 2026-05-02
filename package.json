@@ -1,0 +1,15 @@
+{
+  "name": "bible-ai-chat",
+  "version": "1.0.0",
+  "description": "Bible AI Chat Assistant - Interactive chat interface with custom Bible AI",
+  "private": true,
+  "workspaces": [
+    "frontend",
+    "backend"
+  ],
+  "scripts": {
+    "dev": "npm run dev --workspaces",
+    "build": "npm run build --workspaces",
+    "start": "npm start --workspaces"
+  }
+}
