@@ -5,8 +5,8 @@ class ApiService {
   private client: AxiosInstance;
 
   constructor() {
-    // Use absolute domain URL for production tunnel routing
-    const apiUrl = `https://60centenergy.com/bibleai/api`;
+    // Use same subdomain as frontend to avoid CORS issues
+    const apiUrl = `https://bibleai.60centenergy.com/api`;
     
     this.client = axios.create({
       baseURL: apiUrl,
