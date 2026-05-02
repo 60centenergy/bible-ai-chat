@@ -5,11 +5,8 @@ class ApiService {
   private client: AxiosInstance;
 
   constructor() {
-    // Dynamically construct API URL based on current hostname
-    // This allows the app to work from different networks (localhost, 192.168.x.x, etc.)
-    const protocol = window.location.protocol;
-    const hostname = window.location.hostname;
-    const apiUrl = `${protocol}//${hostname}/bibleai/api`;
+    // Use absolute domain URL for production tunnel routing
+    const apiUrl = `https://60centenergy.com/bibleai/api`;
     
     this.client = axios.create({
       baseURL: apiUrl,

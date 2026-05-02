@@ -17,7 +17,7 @@ export default function Login({ onLogin }: LoginProps) {
     setIsLoading(true);
 
     try {
-      const apiUrl = `${window.location.protocol}//${window.location.hostname}/bibleai/api`;
+      const apiUrl = `https://60centenergy.com/bibleai/api`;
       const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
