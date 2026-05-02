@@ -17,7 +17,7 @@ export default function Login({ onLogin }: LoginProps) {
     setIsLoading(true);
 
     try {
-      const apiUrl = `${window.location.protocol}//${window.location.hostname}:5000/api`;
+      const apiUrl = `${window.location.protocol}//${window.location.hostname}/bibleai/api`;
       const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
@@ -109,10 +109,6 @@ export default function Login({ onLogin }: LoginProps) {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        <p className="text-center text-sm text-gray-600 mt-6">
-          Default credentials: admin / admin
-        </p>
       </div>
     </div>
   );
