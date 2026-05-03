@@ -9,6 +9,15 @@ import { hashPassword, comparePassword, generateToken, verifyToken, getTokenFrom
 
 dotenv.config();
 
+// Extend Express Request type
+declare global {
+  namespace Express {
+    interface Request {
+      user?: { userId: number; username: string; isAdmin: boolean };
+    }
+  }
+}
+
 const app = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
@@ -91,7 +100,7 @@ startServer();
 
 // Middleware
 app.use(cors({
-  origin: (origin, callback) => {
+  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
     const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['*'];
     if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       callback(null, true);
@@ -110,7 +119,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 });
 
 // Auth middleware - verify JWT token
-const authenticateToken = (req: any, res: Response, next: NextFunction) => {
+const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
   const token = getTokenFromRequest(req);
   
   if (!token) {

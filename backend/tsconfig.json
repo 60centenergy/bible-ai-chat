@@ -6,7 +6,6 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "strict": true,
-    "noImplicitAny": false,
     "esModuleInterop": true,
     "skipLibCheck": true,
     "forceConsistentCasingInFileNames": true,
@@ -14,8 +13,7 @@
     "declaration": true,
     "declarationMap": true,
     "sourceMap": true,
-    "moduleResolution": "nodenext",
-    "typeRoots": ["./node_modules/@types"]
+    "moduleResolution": "nodenext"
   },
   "include": ["src/**/*"],
   "exclude": ["node_modules", "dist"]
