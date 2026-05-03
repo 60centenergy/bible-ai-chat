@@ -1,26 +1,40 @@
-import Database from 'better-sqlite3';
+import initSqlJs from 'sql.js';
+import fs from 'fs';
 import path from 'path';
 import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const DB_PATH = path.join(__dirname, '..', 'bible-ai.db');
 
-let db: Database.Database;
+let db: any;
+let SQL: any;
 
-export function initializeDatabase(): Promise<void> {
+export async function initializeDatabase(): Promise<void> {
   try {
-    db = new Database(DB_PATH);
-    console.log('Connected to SQLite database');
+    SQL = await initSqlJs();
+    
+    // Load existing database if it exists
+    if (fs.existsSync(DB_PATH)) {
+      const buffer = fs.readFileSync(DB_PATH);
+      db = new SQL.Database(buffer);
+      console.log('✓ Loaded existing SQLite database');
+    } else {
+      db = new SQL.Database();
+      console.log('✓ Created new SQLite database');
+    }
+    
     createTables();
-    return Promise.resolve();
+    saveDatabase();
+    console.log('✓ Database initialized');
   } catch (error) {
-    return Promise.reject(error);
+    console.error('Database initialization error:', error);
+    throw error;
   }
 }
 
 function createTables(): void {
   // Users table
-  db.exec(
+  db.run(
     `CREATE TABLE IF NOT EXISTS users (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE NOT NULL,
@@ -32,7 +46,7 @@ function createTables(): void {
   );
 
   // Activity logs table
-  db.exec(
+  db.run(
     `CREATE TABLE IF NOT EXISTS activity_logs (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL,
@@ -43,8 +57,8 @@ function createTables(): void {
     )`
   );
 
-  // User stats table (for tracking usage)
-  db.exec(
+  // User stats table
+  db.run(
     `CREATE TABLE IF NOT EXISTS user_stats (
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       user_id INTEGER NOT NULL UNIQUE,
@@ -56,20 +70,29 @@ function createTables(): void {
       FOREIGN KEY (user_id) REFERENCES users(id)
     )`
   );
-
-  console.log('Database tables created');
 }
 
-export function getDatabase(): Database.Database {
-  return db;
+function saveDatabase(): void {
+  if (db) {
+    const data = db.export();
+    const buffer = Buffer.from(data);
+    fs.writeFileSync(DB_PATH, buffer);
+  }
 }
 
-// Helper functions for database operations - wrapped in promises for API compatibility
+// Helper functions for database operations
 export function runQuery(sql: string, params: any[] = []): Promise<any> {
   try {
-    const stmt = db.prepare(sql);
-    const result = stmt.run(...params);
-    return Promise.resolve({ lastID: result.lastInsertRowid, changes: result.changes });
+    db.run(sql, params);
+    saveDatabase();
+    
+    // Get last insert rowid and changes
+    const stmt = db.prepare('SELECT last_insert_rowid() as lastID, changes() as changes');
+    stmt.bind();
+    const result = stmt.getAsObject();
+    stmt.free();
+    
+    return Promise.resolve({ lastID: result.lastID || 0, changes: result.changes || 0 });
   } catch (error) {
     return Promise.reject(error);
   }
@@ -78,7 +101,14 @@ export function runQuery(sql: string, params: any[] = []): Promise<any> {
 export function getQuery(sql: string, params: any[] = []): Promise<any> {
   try {
     const stmt = db.prepare(sql);
-    const row = stmt.get(...params);
+    stmt.bind(params);
+    
+    let row = null;
+    if (stmt.step()) {
+      row = stmt.getAsObject();
+    }
+    stmt.free();
+    
     return Promise.resolve(row);
   } catch (error) {
     return Promise.reject(error);
@@ -88,8 +118,15 @@ export function getQuery(sql: string, params: any[] = []): Promise<any> {
 export function allQuery(sql: string, params: any[] = []): Promise<any[]> {
   try {
     const stmt = db.prepare(sql);
-    const rows = stmt.all(...params);
-    return Promise.resolve(rows || []);
+    stmt.bind(params);
+    
+    const rows: any[] = [];
+    while (stmt.step()) {
+      rows.push(stmt.getAsObject());
+    }
+    stmt.free();
+    
+    return Promise.resolve(rows);
   } catch (error) {
     return Promise.reject(error);
   }
