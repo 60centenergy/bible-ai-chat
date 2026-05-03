@@ -12,15 +12,14 @@
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "dotenv-expand": "^13.0.0",
+    "esbuild": "^0.19.0",
     "express": "^4.18.2",
     "groq-sdk": "^0.4.0",
     "jsonwebtoken": "^9.0.3",
     "marked": "^14.1.4",
     "pdfjs-dist": "^3.11.174",
-    "sqlite3": "^6.0.1"
-  },
-  "devDependencies": {
-    "esbuild": "^0.19.0",
+    "sqlite3": "^6.0.1",
     "typescript": "^5.2.2"
-  }
+  },
+  "devDependencies": {}
 }
