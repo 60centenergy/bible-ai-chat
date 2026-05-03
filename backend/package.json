@@ -4,11 +4,12 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.ts",
-    "build": "esbuild src/index.ts src/auth.ts src/database.ts src/knowledge-base.ts --bundle --platform=node --target=node18 --format=esm --outdir=dist --external:express --external:cors --external:bcrypt --external:jsonwebtoken --external:sqlite3 --external:groq-sdk --external:pdfjs-dist --external:marked --external:dotenv --external:dotenv-expand",
+    "build": "esbuild src/index.ts src/auth.ts src/database.ts src/knowledge-base.ts --bundle --platform=node --target=node18 --format=esm --outdir=dist --external:express --external:cors --external:bcrypt --external:jsonwebtoken --external:better-sqlite3 --external:groq-sdk --external:pdfjs-dist --external:marked --external:dotenv --external:dotenv-expand",
     "start": "node dist/index.js"
   },
   "dependencies": {
     "bcrypt": "^6.0.0",
+    "better-sqlite3": "^9.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
     "dotenv-expand": "^13.0.0",
@@ -18,7 +19,6 @@
     "jsonwebtoken": "^9.0.3",
     "marked": "^14.1.4",
     "pdfjs-dist": "^3.11.174",
-    "sqlite3": "^6.0.1",
     "typescript": "^5.2.2"
   },
   "devDependencies": {}
