@@ -4,7 +4,7 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.ts",
-    "build": "esbuild src/index.ts src/auth.ts src/database.ts src/knowledge-base.ts --bundle --platform=node --target=node18 --outdir=dist --external:express --external:cors --external:bcrypt --external:jsonwebtoken --external:sqlite3 --external:groq-sdk --external:pdfjs-dist --external:marked --external:dotenv --external:dotenv-expand",
+    "build": "esbuild src/index.ts src/auth.ts src/database.ts src/knowledge-base.ts --bundle --platform=node --target=node18 --format=esm --outdir=dist --external:express --external:cors --external:bcrypt --external:jsonwebtoken --external:sqlite3 --external:groq-sdk --external:pdfjs-dist --external:marked --external:dotenv --external:dotenv-expand",
     "start": "node dist/index.js"
   },
   "dependencies": {
