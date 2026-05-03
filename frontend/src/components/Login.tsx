@@ -109,10 +109,6 @@ export default function Login({ onLogin }: LoginProps) {
             {isLoading ? 'Signing in...' : 'Sign In'}
           </button>
         </form>
-
-        <p className="text-center text-sm text-gray-600 mt-6">
-          Default credentials: admin / admin
-        </p>
       </div>
     </div>
   );

@@ -5,11 +5,9 @@ class ApiService {
   private client: AxiosInstance;
 
   constructor() {
-    // Dynamically construct API URL based on current hostname
-    // This allows the app to work from different networks (localhost, 192.168.x.x, etc.)
-    const protocol = window.location.protocol;
+    // Dynamically use current hostname so it works on localhost, 192.168.x.x, etc.
     const hostname = window.location.hostname;
-    const apiUrl = `${protocol}//${hostname}/bibleai/api`;
+    const apiUrl = `http://${hostname}:5000/api`;
     
     this.client = axios.create({
       baseURL: apiUrl,

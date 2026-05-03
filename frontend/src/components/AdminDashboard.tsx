@@ -75,7 +75,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  const apiUrl = `${window.location.protocol}//${window.location.hostname}/bibleai/api`;
+  const apiUrl = `http://${window.location.hostname}:5000/api`;
 
   const fetchData = async () => {
     setIsLoading(true);
