@@ -4,15 +4,10 @@
   "type": "module",
   "scripts": {
     "dev": "node --watch src/index.ts",
-    "build": "tsc",
+    "build": "npm install && tsc",
     "start": "node dist/index.js"
   },
   "dependencies": {
-    "@types/bcrypt": "^6.0.0",
-    "@types/cors": "^2.8.17",
-    "@types/express": "^4.17.21",
-    "@types/jsonwebtoken": "^9.0.10",
-    "@types/node": "^20.10.0",
     "bcrypt": "^6.0.0",
     "cors": "^2.8.5",
     "dotenv": "^16.3.1",
@@ -22,8 +17,7 @@
     "jsonwebtoken": "^9.0.3",
     "marked": "^14.1.4",
     "pdfjs-dist": "^3.11.174",
-    "sqlite3": "^6.0.1",
-    "typescript": "^5.2.2"
+    "sqlite3": "^6.0.1"
   },
   "devDependencies": {
     "@types/bcrypt": "^6.0.0",
