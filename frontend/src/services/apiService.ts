@@ -5,9 +5,17 @@ class ApiService {
   private client: AxiosInstance;
 
   constructor() {
-    // Dynamically use current hostname so it works on localhost, 192.168.x.x, etc.
+    // Smart API URL detection
     const hostname = window.location.hostname;
-    const apiUrl = `http://${hostname}:5000/api`;
+    let apiUrl: string;
+    
+    // Local development: use localhost or local IP
+    if (hostname === 'localhost' || hostname.startsWith('192.168') || hostname.startsWith('127.0.0.1')) {
+      apiUrl = `http://${hostname}:5000/api`;
+    } else {
+      // Production: use environment variable or fallback
+      apiUrl = import.meta.env.VITE_API_URL || 'https://bible-ai-backend.railway.app/api';
+    }
     
     this.client = axios.create({
       baseURL: apiUrl,
