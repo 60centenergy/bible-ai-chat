@@ -19,18 +19,18 @@ export const onRequest: PagesFunction<Env> = async (context) => {
   
   const targetUrl = `${backendUrl}${apiPath}${queryString}`;
   
+  // Clone the request to preserve the body stream
+  const clonedRequest = request.clone();
+  
   // Forward the request to the backend
   const init: RequestInit = {
-    method: request.method,
-    headers: new Headers(request.headers),
+    method: clonedRequest.method,
+    headers: new Headers(clonedRequest.headers),
   };
   
-  // Properly handle request body for all methods that might have one
-  if (request.method !== 'GET' && request.method !== 'HEAD') {
-    // Clone the request to get the body
-    if (request.body) {
-      init.body = await request.text();
-    }
+  // Forward request body if present (for POST, PUT, PATCH, etc.)
+  if (clonedRequest.method !== 'GET' && clonedRequest.method !== 'HEAD' && clonedRequest.body) {
+    init.body = clonedRequest.body;
   }
   
   try {
