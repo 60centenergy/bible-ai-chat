@@ -21,21 +21,6 @@ declare global {
 const app = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
-// CRITICAL: Set CORS headers manually FIRST before any other middleware
-app.use((req: Request, res: Response, next: NextFunction) => {
-  res.header('Access-Control-Allow-Origin', '*');
-  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
-  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.header('Access-Control-Max-Age', '86400');
-  
-  // Handle OPTIONS preflight requests immediately
-  if (req.method === 'OPTIONS') {
-    return res.sendStatus(200);
-  }
-  
-  next();
-});
-
 // Initialize Groq client
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -113,7 +98,19 @@ async function startServer() {
 // Call initialization
 startServer();
 
-// Note: CORS headers are set manually above for maximum compatibility
+// CORS Configuration - Very Permissive for Development
+const corsOptions = {
+  origin: '*',
+  credentials: false,
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));
+// Handle preflight explicitly  
+app.options('*', cors(corsOptions));
+
 app.use(express.json());
 
 // Logging middleware
