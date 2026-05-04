@@ -25,13 +25,19 @@ export const onRequest: PagesFunction<Env> = async (context) => {
     headers: new Headers(request.headers),
   };
   
-  // Copy request body if present
-  if (request.body && (request.method === 'POST' || request.method === 'PUT' || request.method === 'PATCH')) {
-    init.body = request.body;
+  // Properly handle request body for all methods that might have one
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    // Clone the request to get the body
+    if (request.body) {
+      init.body = await request.text();
+    }
   }
   
   try {
     const response = await fetch(targetUrl, init);
+    
+    // Read the response body
+    const responseBody = await response.text();
     
     // Create a new response with the backend's response
     const responseInit: ResponseInit = {
@@ -40,10 +46,10 @@ export const onRequest: PagesFunction<Env> = async (context) => {
       headers: new Headers(response.headers),
     };
     
-    // Ensure CORS headers are set (though not strictly needed, good practice)
+    // Ensure CORS headers are set for browser
     responseInit.headers?.set('Access-Control-Allow-Origin', '*');
     
-    return new Response(response.body, responseInit);
+    return new Response(responseBody, responseInit);
   } catch (error) {
     return new Response(
       JSON.stringify({ success: false, error: 'Backend request failed', details: String(error) }),
