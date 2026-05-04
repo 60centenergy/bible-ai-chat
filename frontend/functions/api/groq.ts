@@ -11,6 +11,18 @@ interface GroqRequest {
 export const onRequest: PagesFunction = async (context) => {
   const { request } = context;
 
+  // Handle CORS preflight requests
+  if (request.method === 'OPTIONS') {
+    return new Response(null, {
+      status: 204,
+      headers: {
+        'Access-Control-Allow-Origin': '*',
+        'Access-Control-Allow-Methods': 'POST, OPTIONS',
+        'Access-Control-Allow-Headers': 'Content-Type',
+      },
+    });
+  }
+
   // Only handle POST requests
   if (request.method !== 'POST') {
     return new Response(JSON.stringify({ error: 'Method not allowed' }), {
@@ -31,7 +43,13 @@ export const onRequest: PagesFunction = async (context) => {
           success: false,
           error: 'API configuration error',
         }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
       );
     }
 
@@ -42,7 +60,13 @@ export const onRequest: PagesFunction = async (context) => {
     if (!messages || !Array.isArray(messages)) {
       return new Response(
         JSON.stringify({ success: false, error: 'messages array required' }),
-        { status: 400, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: 400,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
       );
     }
 
@@ -93,7 +117,13 @@ Core Beliefs (Non-Negotiable Framework – Apply Only When Relevant to the Quest
           error: `Groq API error: ${groqResponse.status}`,
           details: errorText,
         }),
-        { status: groqResponse.status, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: groqResponse.status,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
       );
     }
 
@@ -104,7 +134,13 @@ Core Beliefs (Non-Negotiable Framework – Apply Only When Relevant to the Quest
       console.error('❌ No response from Groq');
       return new Response(
         JSON.stringify({ success: false, error: 'No response from AI model' }),
-        { status: 500, headers: { 'Content-Type': 'application/json' } }
+        {
+          status: 500,
+          headers: {
+            'Content-Type': 'application/json',
+            'Access-Control-Allow-Origin': '*',
+          },
+        }
       );
     }
 
@@ -122,6 +158,8 @@ Core Beliefs (Non-Negotiable Framework – Apply Only When Relevant to the Quest
         headers: {
           'Content-Type': 'application/json',
           'Access-Control-Allow-Origin': '*',
+          'Access-Control-Allow-Methods': 'POST, OPTIONS',
+          'Access-Control-Allow-Headers': 'Content-Type',
         },
       }
     );
@@ -132,7 +170,13 @@ Core Beliefs (Non-Negotiable Framework – Apply Only When Relevant to the Quest
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
       }),
-      { status: 500, headers: { 'Content-Type': 'application/json' } }
+      {
+        status: 500,
+        headers: {
+          'Content-Type': 'application/json',
+          'Access-Control-Allow-Origin': '*',
+        },
+      }
     );
   }
 };
