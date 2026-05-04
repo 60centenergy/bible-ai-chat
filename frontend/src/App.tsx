@@ -2,108 +2,55 @@ import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
 import AdminDashboard from './components/AdminDashboard';
+import { PasswordPrompt } from './components/PasswordPrompt';
 import { Chat } from './types';
 import { storageService } from './utils/storage';
 import { generateId, generateChatTitle } from './utils/generateTitle';
 
-interface AuthUser {
-  username: string;
-  isAdmin: boolean;
-}
-
 function App() {
-  const [apiKey, setApiKey] = useState<string | null>(null);
-  const [authUser, setAuthUser] = useState<AuthUser | null>(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
-  const [isLoading, setIsLoading] = useState(true);
 
-  // Initialize API key from environment on mount
+  // Check if already authenticated in this session
   useEffect(() => {
-    const initializeAuth = async () => {
-      // API key should be set via environment variable or config
-      const key = import.meta.env.VITE_API_KEY || sessionStorage.getItem('apiKey');
-      
-      if (key) {
-        setApiKey(key);
-        
-        // Verify the API key is valid
-        try {
-          const hostname = window.location.hostname;
-          let apiUrl = 'https://bible-ai-backend-3flg.onrender.com/api';
-          
-          if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168')) {
-            apiUrl = 'http://localhost:5000/api';
-          }
-          
-          const response = await fetch(`${apiUrl}/auth/verify`, {
-            method: 'POST',
-            headers: { 
-              'Content-Type': 'application/json',
-              'x-api-key': key 
-            }
-          });
-          
-          if (response.ok) {
-            const data = await response.json();
-            setAuthUser({
-              username: data.data.user.username,
-              isAdmin: data.data.user.isAdmin
-            });
-          }
-        } catch (error) {
-          console.error('Auth verification failed:', error);
-        }
-      }
-      
-      setIsLoading(false);
-    };
-    
-    initializeAuth();
+    const isAuth = sessionStorage.getItem('authenticated') === 'true';
+    if (isAuth) {
+      setIsAuthenticated(true);
+      loadChats();
+    }
   }, []);
 
-  // Load chats from storage on mount (per-user storage)
-  useEffect(() => {
-    if (!authUser) return;
-    
-    const savedChats = storageService.getAllChats(authUser.username);
+  const loadChats = () => {
+    const savedChats = storageService.getAllChats('user');
     setChats(savedChats);
-    
-    // Set current chat to most recent if available
     if (savedChats.length > 0) {
       setCurrentChatId(savedChats[0].id);
     }
-  }, [authUser]);
-
-  const handleLogout = () => {
-    setApiKey(null);
-    setAuthUser(null);
-    setChats([]);
-    setCurrentChatId(null);
-    sessionStorage.removeItem('apiKey');
   };
 
-  // If not authenticated, show loading or error
-  if (!apiKey) {
-    return <div className="flex items-center justify-center h-screen">Loading...</div>;
-  }
+  const handlePasswordSubmit = () => {
+    sessionStorage.setItem('authenticated', 'true');
+    setIsAuthenticated(true);
+    loadChats();
+  };
 
-  // If no auth user loaded yet, wait
-  if (!authUser && !isLoading) {
-    return <div className="flex items-center justify-center h-screen">Authentication failed</div>;
-  }
+  const handleLogout = () => {
+    setIsAuthenticated(false);
+    setChats([]);
+    setCurrentChatId(null);
+    sessionStorage.removeItem('authenticated');
+  };
 
-  // If admin, show admin dashboard
-  if (authUser?.isAdmin) {
-    return <AdminDashboard apiKey={apiKey} username={authUser.username} onLogout={handleLogout} />;
+  // Show password prompt if not authenticated
+  if (!isAuthenticated) {
+    return <PasswordPrompt onPasswordSubmit={handlePasswordSubmit} />;
   }
 
   const currentChat = chats.find(chat => chat.id === currentChatId);
 
   const handleNewChat = () => {
-    if (!authUser) return;
-    
     const newChat: Chat = {
       id: generateId(),
       title: 'New Chat',
@@ -114,12 +61,12 @@ function App() {
     
     const updatedChats = [newChat, ...chats];
     setChats(updatedChats);
-    storageService.saveChat(newChat, authUser.username);
+    storageService.saveChat(newChat, 'user');
     setCurrentChatId(newChat.id);
   };
 
   const handleSendMessage = (message: string) => {
-    if (!currentChat || !authUser || !apiKey) return;
+    if (!currentChat) return;
 
     const updatedChat = { ...currentChat };
     
@@ -140,23 +87,10 @@ function App() {
     );
     
     setChats(updatedChats);
-    storageService.saveChat(updatedChat, authUser.username);
-
-    // Track message in backend
-    const hostname = window.location.hostname;
-    const trackUrl = (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168'))
-      ? 'http://localhost:5000/api/admin/track/message'
-      : '/api/admin/track/message';
-    
-    fetch(trackUrl, {
-      method: 'POST',
-      headers: { 'x-api-key': apiKey }
-    }).catch(err => console.error('Failed to track message:', err));
+    storageService.saveChat(updatedChat, 'user');
   };
 
   const handleAssistantMessage = (content: string, formattedContent?: string) => {
-    if (!authUser || !apiKey) return;
-
     setChats(prevChats => {
       const chatIndex = prevChats.findIndex(c => c.id === currentChatId);
       if (chatIndex === -1) return prevChats;
@@ -182,17 +116,15 @@ function App() {
         ...prevChats.slice(chatIndex + 1)
       ];
 
-      storageService.saveChat(updatedChat, authUser.username);
+      storageService.saveChat(updatedChat, 'user');
       return updatedChats;
     });
   };
 
   const handleDeleteChat = (chatId: string) => {
-    if (!authUser) return;
-
     const updatedChats = chats.filter(chat => chat.id !== chatId);
     setChats(updatedChats);
-    storageService.deleteChat(chatId, authUser.username);
+    storageService.deleteChat(chatId, 'user');
     
     if (currentChatId === chatId) {
       setCurrentChatId(updatedChats.length > 0 ? updatedChats[0].id : null);
@@ -200,14 +132,12 @@ function App() {
   };
 
   const handleClearAllChats = () => {
-    if (!authUser) return;
-
     setChats([]);
     setCurrentChatId(null);
-    storageService.clearAllChats(authUser.username);
+    storageService.clearAllChats('user');
   };
 
-  // Regular user chat interface
+  // Chat interface
   return (
     <div className="flex h-screen bg-gray-50">
       {/* Sidebar */}
@@ -220,7 +150,7 @@ function App() {
         onNewChat={handleNewChat}
         onDeleteChat={handleDeleteChat}
         onClearAll={handleClearAllChats}
-        authToken={apiKey}
+        onLogout={handleLogout}
       />
 
       {/* Main Chat Area */}
@@ -232,7 +162,6 @@ function App() {
           chat={currentChat}
           onSendMessage={handleSendMessage}
           onAssistantMessage={handleAssistantMessage}
-          authToken={apiKey}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           sidebarOpen={sidebarOpen}
         />

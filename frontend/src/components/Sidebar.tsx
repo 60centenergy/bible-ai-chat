@@ -12,7 +12,7 @@ interface SidebarProps {
   onNewChat: () => void;
   onDeleteChat: (chatId: string) => void;
   onClearAll: () => void;
-  authToken?: string;
+  onLogout: () => void;
 }
 
 export default function Sidebar({
@@ -23,7 +23,8 @@ export default function Sidebar({
   onSelectChat,
   onNewChat,
   onDeleteChat,
-  onClearAll
+  onClearAll,
+  onLogout
 }: SidebarProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
@@ -133,6 +134,16 @@ export default function Sidebar({
               ))}
             </div>
           )}
+        </div>
+
+        {/* Logout Button */}
+        <div className="border-t border-gray-200 p-4">
+          <button
+            onClick={onLogout}
+            className="w-full py-2 px-4 bg-red-600 hover:bg-red-700 text-white rounded-lg font-medium transition"
+          >
+            Logout
+          </button>
         </div>
       </aside>
 

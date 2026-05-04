@@ -9,7 +9,6 @@ interface ChatAreaProps {
   chat: Chat | undefined;
   onSendMessage: (message: string) => void;
   onAssistantMessage: (content: string, formattedContent?: string) => void;
-  authToken?: string;
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
 }
@@ -18,7 +17,6 @@ export default function ChatArea({
   chat,
   onSendMessage,
   onAssistantMessage,
-  authToken,
   onToggleSidebar,
   sidebarOpen
 }: ChatAreaProps) {
