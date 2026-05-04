@@ -121,6 +121,10 @@ app.use(express.json());
 // Logging middleware
 app.use((req: Request, res: Response, next: NextFunction) => {
   console.log(`[${new Date().toISOString()}] ${req.method} ${req.path}`);
+  // Track CORS handling
+  if (req.method === 'OPTIONS') {
+    console.log('[CORS] OPTIONS request handled by middleware');
+  }
   next();
 });
 
@@ -672,6 +676,11 @@ app.patch('/api/admin/users/:userId', authenticateToken, requireAdmin, async (re
       error: error instanceof Error ? error.message : 'Internal server error'
     });
   }
+});
+
+// Catch-all OPTIONS handler - ensures all OPTIONS requests are handled for CORS
+app.options('*', (req: Request, res: Response) => {
+  res.status(200).end();
 });
 
 // Delete user
