@@ -39,7 +39,10 @@ function App() {
           
           const response = await fetch(`${apiUrl}/auth/verify`, {
             method: 'POST',
-            headers: { 'x-api-key': key }
+            headers: { 
+              'Content-Type': 'application/json',
+              'x-api-key': key 
+            }
           });
           
           if (response.ok) {
