@@ -21,6 +21,21 @@ declare global {
 const app = express();
 const PORT = parseInt(process.env.PORT || '5000', 10);
 
+// CRITICAL: Set CORS headers manually FIRST before any other middleware
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.header('Access-Control-Max-Age', '86400');
+  
+  // Handle OPTIONS preflight requests immediately
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  
+  next();
+});
+
 // Initialize Groq client
 const groq = new Groq({
   apiKey: process.env.GROQ_API_KEY,
@@ -98,32 +113,7 @@ async function startServer() {
 // Call initialization
 startServer();
 
-// Middleware
-app.use(cors({
-  origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    // Default allowed origins
-    const defaultOrigins = [
-      'https://bible-ai-chat.pages.dev',  // Cloudflare Pages
-      'https://60centenergy.com',          // Custom domain
-      'https://www.60centenergy.com',      // Custom domain with www
-      'http://localhost:3000',             // Local development
-      'http://localhost:5000',             // Local backend
-    ];
-    
-    const allowedOrigins = process.env.CORS_ORIGIN 
-      ? process.env.CORS_ORIGIN.split(',') 
-      : defaultOrigins;
-    
-    // Allow if no origin (same-origin requests) or if origin is in allowed list or * is allowed
-    if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
-      callback(null, true);
-    } else {
-      console.warn(`CORS rejected origin: ${origin}`);
-      callback(null, false);
-    }
-  },
-  credentials: false
-}));
+// Note: CORS headers are set manually above for maximum compatibility
 app.use(express.json());
 
 // Logging middleware
