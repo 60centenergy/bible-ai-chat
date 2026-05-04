@@ -3,6 +3,7 @@ import { ChatRequest, ChatResponse, ApiResponse } from '../types';
 
 class ApiService {
   private client: AxiosInstance;
+  private apiKey: string;
 
   constructor() {
     // API URL configuration
@@ -17,28 +18,29 @@ class ApiService {
       apiUrl = 'https://bible-ai-backend-3flg.onrender.com/api';
     }
     
+    // Get API key from environment (set in Cloudflare Pages or .env)
+    this.apiKey = import.meta.env.VITE_API_KEY || '';
+    
     this.client = axios.create({
       baseURL: apiUrl,
       timeout: 60000,
       headers: {
         'Content-Type': 'application/json',
+        ...(this.apiKey && { 'x-api-key': this.apiKey })
       }
     });
     
     console.log(`📡 API endpoint: ${apiUrl}`);
+    if (this.apiKey) {
+      console.log(`🔑 API key configured (${this.apiKey.substring(0, 8)}...)`);
+    } else {
+      console.warn('⚠️ No API key found - API calls may fail');
+    }
   }
 
-  async sendMessage(request: ChatRequest, apiKey?: string): Promise<ChatResponse> {
+  async sendMessage(request: ChatRequest): Promise<ChatResponse> {
     try {
-      const headers: any = {
-        'Content-Type': 'application/json',
-      };
-      
-      if (apiKey) {
-        headers['x-api-key'] = apiKey;
-      }
-
-      const response = await this.client.post<ApiResponse<ChatResponse>>('/chat', request, { headers });
+      const response = await this.client.post<ApiResponse<ChatResponse>>('/chat', request);
       
       if (!response.data.success || !response.data.data) {
         throw new Error(response.data.error || 'Failed to send message');
