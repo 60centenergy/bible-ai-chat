@@ -1,0 +1,16 @@
+# Wrangler configuration for Cloudflare Pages Functions
+# Defines environment variables for the Groq API proxy
+
+name = "bible-ai-chat"
+main = "src/index.ts"
+compatibility_date = "2024-01-01"
+
+# Environment variables for production
+[env.production]
+vars = { GROQ_MODEL = "mixtral-8x7b-32768" }
+vars_secure = { GROQ_API_KEY = "REPLACE_WITH_ACTUAL_KEY" }
+
+# Environment variables for development
+[env.development]
+vars = { GROQ_MODEL = "mixtral-8x7b-32768" }
+vars_secure = { GROQ_API_KEY = "sk-dev-placeholder" }

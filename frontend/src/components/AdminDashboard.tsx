@@ -75,16 +75,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Smart API URL detection (same as apiService)
-  const getApiUrl = () => {
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname.startsWith('192.168') || hostname.startsWith('127.0.0.1')) {
-      return `http://${hostname}:5000/api`;
-    } else {
-      return import.meta.env.VITE_API_URL || 'https://bible-ai-backend.railway.app/api';
-    }
-  };
-  const apiUrl = getApiUrl();
+  const apiUrl = `http://${window.location.hostname}:5000/api`;
 
   const fetchData = async () => {
     setIsLoading(true);

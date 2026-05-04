@@ -17,15 +17,7 @@ export default function Login({ onLogin }: LoginProps) {
     setIsLoading(true);
 
     try {
-      // Smart API URL detection (same as apiService)
-      const hostname = window.location.hostname;
-      let apiUrl: string;
-      if (hostname === 'localhost' || hostname.startsWith('192.168') || hostname.startsWith('127.0.0.1')) {
-        apiUrl = `http://${hostname}:5000/api`;
-      } else {
-        apiUrl = import.meta.env.VITE_API_URL || 'https://bible-ai-backend.railway.app/api';
-      }
-      
+      const apiUrl = `${window.location.protocol}//${window.location.hostname}:5000/api`;
       const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {
