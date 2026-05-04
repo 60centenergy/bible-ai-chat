@@ -136,18 +136,18 @@ const authenticateToken = async (req: any, res: Response, next: NextFunction) =>
   }
 
   try {
-    const user = await getQuery('SELECT id, username, is_admin FROM users WHERE api_key = ?', [apiKey]);
-    
-    if (!user) {
-      return res.status(401).json({
-        success: false,
-        error: 'Unauthorized: Invalid API key'
-      });
+    // First, check if it matches the environment variable API key (for shared/admin access)
+    if (process.env.API_KEY && apiKey === process.env.API_KEY) {
+      // Use admin user for environment variable key
+      req.user = {
+        userId: 1,
+        username: 'admin',
+        isAdmin: true
+      };
+      return next();
     }
 
-    req.user = {
-      userId: user.id,
-      username: user.username,
+    // Then, check database for individual user API keys
       isAdmin: user.is_admin === 1
     };
 
