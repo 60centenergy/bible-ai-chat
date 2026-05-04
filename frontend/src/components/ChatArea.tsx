@@ -9,7 +9,6 @@ interface ChatAreaProps {
   chat: Chat | undefined;
   onSendMessage: (message: string) => void;
   onAssistantMessage: (content: string, formattedContent?: string) => void;
-  authToken?: string;
   onToggleSidebar?: () => void;
   sidebarOpen?: boolean;
 }
@@ -18,7 +17,6 @@ export default function ChatArea({
   chat,
   onSendMessage,
   onAssistantMessage,
-  authToken,
   onToggleSidebar,
   sidebarOpen
 }: ChatAreaProps) {
@@ -135,16 +133,16 @@ export default function ChatArea({
       // Import API service here to avoid circular dependencies
       const { apiService } = await import('../services/apiService');
 
-      // Prepare messages for API
+      // Prepare messages for API - strip out extra properties (id, timestamp, etc)
       const messagesForApi = [
-        ...chat.messages,
+        ...chat.messages.map(msg => ({ role: msg.role, content: msg.content })),
         { role: 'user' as const, content: message }
       ];
 
       // Send to API
       const response = await apiService.sendMessage({
         messages: messagesForApi
-      }, authToken);
+      });
 
       // Add assistant message
       onAssistantMessage(response.content, response.formattedContent);

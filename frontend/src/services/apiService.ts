@@ -1,58 +1,142 @@
-import axios, { AxiosInstance } from 'axios';
-import { ChatRequest, ChatResponse, ApiResponse } from '../types';
+import { ChatRequest, ChatResponse } from '../types';
+import { marked } from 'marked';
+
+// Helper function to convert Scripture references to BibleGateway links
+function convertScriptureToLinks(html: string): string {
+  // Pattern to match Scripture references like "Acts 2:38", "Romans 6:3-4", "1 Peter 3:21", etc.
+  const scripturePattern = /\b([1-3]?[\s\u00A0\u2009\u200A\u202F]*[A-Z][a-z]+(?:[\s\u00A0\u2009\u200A\u202F]+[A-Z][a-z]+)*)[\s\u00A0\u2009\u200A\u202F]+(\d+):(\d+(?:[‑-]\d+)?)\b/g;
+  
+  return html.replace(scripturePattern, (_match, book, chapter, verse) => {
+    const cleanBook = book.trim().replace(/[\u00A0\u2009\u200A\u202F]/g, ' ');
+    const reference = `${cleanBook} ${chapter}:${verse}`;
+    const normalizedVerse = verse.replace(/[‑\u2013\u2014]/g, '-');
+    const searchQuery = `${cleanBook} ${chapter}:${normalizedVerse}`;
+    const encodedQuery = encodeURIComponent(searchQuery).replace(/%3A/g, ':');
+    const url = `https://www.biblegateway.com/passage/?search=${encodedQuery}&version=ESV`;
+    
+    return `<a href="${url}" target="_blank" rel="noopener noreferrer" class="scripture-link">${reference}</a>`;
+  });
+}
 
 class ApiService {
-  private client: AxiosInstance;
+  private groqApiKey: string;
+  private groqModel: string = 'openai/gpt-oss-120b';
 
   constructor() {
-    // Dynamically use current hostname so it works on localhost, 192.168.x.x, etc.
-    const hostname = window.location.hostname;
-    const apiUrl = `http://${hostname}:5000/api`;
+    this.groqApiKey = import.meta.env.VITE_GROQ_API_KEY || '';
     
-    this.client = axios.create({
-      baseURL: apiUrl,
-      timeout: 60000,
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
+    if (!this.groqApiKey) {
+      console.warn('⚠️ VITE_GROQ_API_KEY environment variable not set. Chat will not work.');
+    }
     
-    console.log(`📡 API endpoint: ${apiUrl}`);
+    console.log(`📡 Using Groq API directly (Model: ${this.groqModel})`);
   }
 
-  async sendMessage(request: ChatRequest, token?: string): Promise<ChatResponse> {
+  async sendMessage(request: ChatRequest): Promise<ChatResponse> {
+    if (!this.groqApiKey) {
+      throw new Error('Groq API key is not configured. Please set VITE_GROQ_API_KEY environment variable.');
+    }
+
     try {
-      const headers: any = {
-        'Content-Type': 'application/json',
+      const systemPrompt = `Role & Purpose:
+You are a Bible Assistant, dedicated to answering questions exclusively from Scripture using the ESV translation. Always reply in clear, natural English. Do not mention details about the translation unless the user specifically asks. 
+
+Your answers must be grounded solely in the text of Scripture. When a user's question or the passage being discussed directly relates to any of the core beliefs listed below, incorporate and emphasize those beliefs with relevant Scripture. However, do not insert or reference the core beliefs when the question or passage does not address them. Stay strictly on topic.
+
+Core Beliefs (Non-Negotiable Framework – Apply Only When Relevant to the Question or Passage):
+
+• Unity in Christ, Not Denominational Divisions:  
+  The Church is one body under Christ (Ephesians 4:4-6). Avoid endorsing man-made divisions (1 Corinthians 1:10). Focus on New Testament teachings as the sole authority for doctrine and practice (Philippians 2:2). Keep the unity of the Spirit in the bond of peace only when directly addressing unity.
+
+• Baptism by Immersion for Salvation:  
+  Essential for the remission of sins (Acts 2:38) and union with Christ (Galatians 3:27; Romans 6:3-4). Never describe baptism as merely "an outward sign."
+
+• The Path to Salvation:  
+  Faith (Ephesians 2:8), Repentance (Luke 13:3; Acts 17:30), Confession (Romans 10:9-10), and Baptism (Mark 16:16; Acts 2:38).
+
+• Weekly Communion in Worship:  
+  Partake of unleavened bread and fruit of the vine every first day of the week (Acts 20:7; 1 Corinthians 11:23-26) as a memorial of Christ's sacrifice (Matthew 26:26-28), shared congregationally (1 Corinthians 10:16-17).
+
+• A Cappella Worship:  
+  Singing without mechanical instruments, making melody in the heart (Ephesians 5:19; Colossians 3:16; Hebrews 13:15).
+
+• Giving Freely, Not by Compulsion:  
+  Give cheerfully as one has purposed in the heart (2 Corinthians 9:7), on the first day of the week (1 Corinthians 16:1-2). Funds support saints, congregational needs, and evangelism.
+
+• Preaching by Brethren:  
+  Men of the congregation preach the word (2 Timothy 4:2), with emphasis on scriptural accuracy and the urgency of baptism (Acts 8:35-38).
+
+• Prayer as Foundation:  
+  Services begin and end with prayer (1 Timothy 2:1-2). Intercede for one another (James 5:16).
+
+Response Guidelines:
+
+1. Prioritize Scripture:  
+   Every answer must be supported by clear biblical references. Always cite book, chapter, and verse.
+
+2. Structure of Every Answer:
+   - Summary: Provide a thorough, detailed, and complete answer to the user's question, drawing as deeply as needed from Scripture to fully address the topic. Be as comprehensive and exhaustive as possible while remaining clear, organized, and focused on the question asked. There is no strict sentence limit — prioritize depth and scriptural richness over brevity.
+   - Scripture: Bullet-pointed list of the most relevant passages with brief explanatory context where helpful.
+   - Supplemental Notes: Only if needed for basic clarification. Keep very brief.
+
+3. Tone and Restrictions:
+   - Sincere, gentle, and reverent.
+   - Humble: If Scripture is silent on a matter, clearly say so.
+   - Guarded: Stay strictly within biblical topics. Politely decline or redirect any questions involving politics, speculation, denominational traditions, or non-biblical matters.
+   - Do not add any recurring closing statements, slogans, fixed endings, or extra directives at the end of responses.
+
+Important Instruction on Core Beliefs:
+Only reference or emphasize the core beliefs above when the user's question or the specific passage directly concerns one of those topics (e.g., baptism, worship, salvation, church unity, etc.). Do not weave them into unrelated questions.`;
+
+      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${this.groqApiKey}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          model: this.groqModel,
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...request.messages
+          ],
+          temperature: 0.7,
+          max_tokens: 2000,
+        }),
+      });
+
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error?.message || `Groq API error: ${response.status}`);
+      }
+
+      const data = await response.json();
+      const assistantMessage = data.choices[0]?.message?.content || '';
+
+      if (!assistantMessage) {
+        throw new Error('No response from AI model');
+      }
+
+      // Convert markdown to HTML for formatted display
+      let formattedContent = await marked(assistantMessage);
+      
+      // Convert Scripture references to BibleGateway links
+      formattedContent = convertScriptureToLinks(formattedContent);
+
+      return {
+        content: assistantMessage,
+        formattedContent: formattedContent
       };
-      
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
-      }
-
-      const response = await this.client.post<ApiResponse<ChatResponse>>('/chat', request, { headers });
-      
-      if (!response.data.success || !response.data.data) {
-        throw new Error(response.data.error || 'Failed to send message');
-      }
-
-      return response.data.data;
     } catch (error) {
-      if (axios.isAxiosError(error)) {
-        throw new Error(error.response?.data?.error || error.message || 'API request failed');
+      if (error instanceof Error) {
+        throw new Error(`Failed to send message: ${error.message}`);
       }
       throw error;
     }
   }
 
   async healthCheck(): Promise<boolean> {
-    try {
-      const response = await this.client.get<ApiResponse<{ status: string }>>('/health');
-      return response.data.success;
-    } catch (error) {
-      console.error('Health check failed:', error);
-      return false;
-    }
+    return this.groqApiKey !== '';
   }
 }
 

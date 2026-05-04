@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
-import Login from './components/Login';
+import { PasswordPrompt } from './components/PasswordPrompt';
 import AdminDashboard from './components/AdminDashboard';
 import { Chat } from './types';
 import { storageService } from './utils/storage';
@@ -43,11 +43,6 @@ function App() {
     }
   }, [authUser]);
 
-  const handleLogin = (token: string, user: AuthUser) => {
-    setAuthToken(token);
-    setAuthUser(user);
-  };
-
   const handleLogout = () => {
     setAuthToken(null);
     setAuthUser(null);
@@ -57,9 +52,21 @@ function App() {
     sessionStorage.removeItem('user');
   };
 
-  // If not authenticated, show login page
+  const handlePasswordSubmit = () => {
+    const dummyToken = 'static-site-token';
+    const dummyUser: AuthUser = {
+      username: 'user',
+      isAdmin: false
+    };
+    setAuthToken(dummyToken);
+    setAuthUser(dummyUser);
+    sessionStorage.setItem('authToken', dummyToken);
+    sessionStorage.setItem('user', JSON.stringify(dummyUser));
+  };
+
+  // If not authenticated, show password prompt
   if (!authToken || !authUser) {
-    return <Login onLogin={handleLogin} />;
+    return <PasswordPrompt onPasswordSubmit={handlePasswordSubmit} />;
   }
 
   // If admin, show admin dashboard
@@ -195,7 +202,6 @@ function App() {
           chat={currentChat}
           onSendMessage={handleSendMessage}
           onAssistantMessage={handleAssistantMessage}
-          authToken={authToken}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           sidebarOpen={sidebarOpen}
         />

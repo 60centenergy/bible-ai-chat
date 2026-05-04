@@ -655,7 +655,6 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
                 chat={currentChat}
                 onSendMessage={handleSendMessage}
                 onAssistantMessage={handleAssistantMessage}
-                authToken={token}
                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
                 sidebarOpen={sidebarOpen}
               />
