@@ -1,5 +1,6 @@
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+import { randomBytes } from 'crypto';
 
 const JWT_SECRET = process.env.JWT_SECRET || 'your-secret-key-change-in-production';
 const JWT_EXPIRATION = '7d';
@@ -40,4 +41,10 @@ export function getTokenFromRequest(req: any): string | null {
     return null;
   }
   return authHeader.slice(7);
+}
+
+export function generateApiKey(): string {
+  // Generate a random 32-byte string and convert to hex
+  // This creates a key like: "abcd1234efgh5678ijkl9012mnop3456"
+  return randomBytes(32).toString('hex');
 }

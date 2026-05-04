@@ -5,7 +5,7 @@ import { Groq } from 'groq-sdk';
 import { marked } from 'marked';
 import { loadKnowledgeBase, loadCachedChunks, searchKnowledgeBase, formatChunksForContext, type KnowledgeChunk } from './knowledge-base.js';
 import { initializeDatabase, runQuery, getQuery, allQuery } from './database.js';
-import { hashPassword, comparePassword, generateToken, verifyToken, getTokenFromRequest } from './auth.js';
+import { hashPassword, comparePassword, generateToken, verifyToken, getTokenFromRequest, generateApiKey } from './auth.js';
 
 dotenv.config();
 
@@ -458,7 +458,7 @@ async function formatMarkdownToHtml(markdown: string): Promise<string> {
 app.get('/api/admin/users', authenticateToken, requireAdmin, async (req: any, res: Response) => {
   try {
     const users = await allQuery(
-      `SELECT id, username, is_admin, created_at, last_login FROM users ORDER BY created_at DESC`
+      `SELECT id, username, is_admin, api_key, created_at, last_login FROM users ORDER BY created_at DESC`
     );
 
     const usersWithStats = await Promise.all(
@@ -467,11 +467,21 @@ app.get('/api/admin/users', authenticateToken, requireAdmin, async (req: any, re
           'SELECT total_chats, total_messages FROM user_stats WHERE user_id = ?',
           [user.id]
         );
+        
+        // Return masked API key for security
+        const maskedApiKey = user.api_key 
+          ? `${user.api_key.substring(0, 8)}...${user.api_key.substring(user.api_key.length - 4)}`
+          : null;
+
         return {
-          ...user,
+          id: user.id,
+          username: user.username,
           isAdmin: user.is_admin === 1,
+          hasApiKey: !!user.api_key,
+          maskedApiKey: maskedApiKey,
           totalChats: stats?.total_chats || 0,
           totalMessages: stats?.total_messages || 0,
+          createdAt: user.created_at,
           lastLogin: user.last_login || 'Never'
         };
       })
@@ -689,6 +699,85 @@ app.delete('/api/admin/users/:userId', authenticateToken, requireAdmin, async (r
     });
   } catch (error) {
     console.error('Error deleting user:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// Generate API key for a user
+app.post('/api/admin/users/:userId/generate-api-key', authenticateToken, requireAdmin, async (req: any, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    // Check if user exists
+    const user = await getQuery('SELECT id, username FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Generate new API key
+    const apiKey = generateApiKey();
+
+    // Update user with new API key
+    await runQuery('UPDATE users SET api_key = ? WHERE id = ?', [apiKey, userId]);
+
+    // Log activity
+    await runQuery(
+      'INSERT INTO activity_logs (user_id, action, details) VALUES (?, ?, ?)',
+      [req.user.userId, 'GENERATE_API_KEY', `Generated new API key for user: ${user.username}`]
+    );
+
+    res.json({
+      success: true,
+      data: {
+        userId,
+        username: user.username,
+        apiKey: apiKey
+      }
+    });
+  } catch (error) {
+    console.error('Error generating API key:', error);
+    res.status(500).json({
+      success: false,
+      error: error instanceof Error ? error.message : 'Internal server error'
+    });
+  }
+});
+
+// Get API key for a user (admins only, shows masked key for security)
+app.get('/api/admin/users/:userId/api-key', authenticateToken, requireAdmin, async (req: any, res: Response) => {
+  try {
+    const { userId } = req.params;
+
+    const user = await getQuery('SELECT id, username, api_key FROM users WHERE id = ?', [userId]);
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        error: 'User not found'
+      });
+    }
+
+    // Return masked API key for security (show first 8 and last 4 characters)
+    const maskedKey = user.api_key 
+      ? `${user.api_key.substring(0, 8)}...${user.api_key.substring(user.api_key.length - 4)}`
+      : 'Not generated';
+
+    res.json({
+      success: true,
+      data: {
+        userId,
+        username: user.username,
+        apiKey: maskedKey,
+        hasApiKey: !!user.api_key
+      }
+    });
+  } catch (error) {
+    console.error('Error fetching API key:', error);
     res.status(500).json({
       success: false,
       error: error instanceof Error ? error.message : 'Internal server error'
