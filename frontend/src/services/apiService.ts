@@ -13,8 +13,21 @@ class ApiService {
     if (hostname === 'localhost' || hostname.startsWith('192.168') || hostname.startsWith('127.0.0.1')) {
       apiUrl = `http://${hostname}:5000/api`;
     } else {
-      // Production: use environment variable or fallback
-      apiUrl = import.meta.env.VITE_API_URL || 'https://bible-ai-backend-3flg.onrender.com/api';
+      // Production: intelligent detection
+      // First try environment variable (set in build/deployment)
+      // Then check for common production domains
+      // Finally fallback to Render backend
+      const envUrl = import.meta.env.VITE_API_URL;
+      
+      if (envUrl) {
+        apiUrl = envUrl;
+      } else if (hostname === '60centenergy.com' || hostname === 'www.60centenergy.com') {
+        // Custom domain pointing to Render
+        apiUrl = 'https://bible-ai-backend-3flg.onrender.com/api';
+      } else {
+        // Cloudflare Pages or other deployment - use Render backend
+        apiUrl = 'https://bible-ai-backend-3flg.onrender.com/api';
+      }
     }
     
     this.client = axios.create({
