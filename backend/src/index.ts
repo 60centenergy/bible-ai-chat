@@ -88,6 +88,7 @@ async function startServer() {
       console.log(`🚀 Bible AI Server running on http://0.0.0.0:${PORT}`);
       console.log(`📖 Model: ${MODEL}`);
       console.log(`🔑 API Key configured: ${process.env.GROQ_API_KEY ? 'Yes' : 'No'}`);
+      console.log(`✅ CORS middleware active - OPTIONS requests handled`);
     });
   } catch (error) {
     console.error('Failed to start server:', error);
