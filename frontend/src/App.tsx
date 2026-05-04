@@ -114,7 +114,7 @@ function App() {
     const hostname = window.location.hostname;
     const trackUrl = (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168'))
       ? 'http://localhost:5000/api/admin/track/message'
-      : 'https://bible-ai-backend-3flg.onrender.com/api/admin/track/message';
+      : '/api/admin/track/message';
     
     fetch(trackUrl, {
       method: 'POST',

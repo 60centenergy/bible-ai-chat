@@ -81,8 +81,8 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168')) {
       return 'http://localhost:5000/api';
     } else {
-      // All production environments use Render backend
-      return 'https://bible-ai-backend-3flg.onrender.com/api';
+      // Production: use relative URL (proxied through Cloudflare Functions)
+      return '/api';
     }
   };
   const apiUrl = getApiUrl();
