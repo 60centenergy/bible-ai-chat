@@ -5,29 +5,17 @@ class ApiService {
   private client: AxiosInstance;
 
   constructor() {
-    // Smart API URL detection
+    // API URL configuration
     const hostname = window.location.hostname;
     let apiUrl: string;
     
-    // Local development: use localhost or local IP
-    if (hostname === 'localhost' || hostname.startsWith('192.168') || hostname.startsWith('127.0.0.1')) {
-      apiUrl = `http://${hostname}:5000/api`;
+    // Local development: use localhost
+    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168')) {
+      apiUrl = 'http://localhost:5000/api';
     } else {
-      // Production: intelligent detection
-      // First try environment variable (set in build/deployment)
-      // Then check for common production domains
-      // Finally fallback to Render backend
-      const envUrl = import.meta.env.VITE_API_URL;
-      
-      if (envUrl) {
-        apiUrl = envUrl;
-      } else if (hostname === '60centenergy.com' || hostname === 'www.60centenergy.com') {
-        // Custom domain pointing to Render
-        apiUrl = 'https://bible-ai-backend-3flg.onrender.com/api';
-      } else {
-        // Cloudflare Pages or other deployment - use Render backend
-        apiUrl = 'https://bible-ai-backend-3flg.onrender.com/api';
-      }
+      // All production environments use Render backend
+      // This includes: Cloudflare Pages, custom domain, etc.
+      apiUrl = 'https://bible-ai-backend-3flg.onrender.com/api';
     }
     
     this.client = axios.create({
