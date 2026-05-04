@@ -39,7 +39,7 @@ interface Stats {
   recentActivity: any[];
 }
 
-export default function AdminDashboard({ token, username, onLogout }: AdminDashboardProps) {
+export default function AdminDashboard({ apiKey, username, onLogout }: AdminDashboardProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -125,6 +125,11 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
     }
   };
 
+  // Load admin data on mount
+  useEffect(() => {
+    fetchData();
+  }, []);
+
   // Load admin's chats from localStorage
   useEffect(() => {
     const savedChats = storageService.getAllChats(username);
@@ -184,7 +189,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'x-api-key': apiKey
         },
         body: JSON.stringify({
           username: newUserUsername,
@@ -236,7 +241,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          Authorization: `Bearer ${token}`
+          'x-api-key': apiKey
         },
         body: JSON.stringify({
           username: editingUsername,
@@ -283,7 +288,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
       const response = await fetch(`${apiUrl}/admin/users/${deleteUserId}`, {
         method: 'DELETE',
         headers: {
-          Authorization: `Bearer ${token}`
+          'x-api-key': apiKey
         }
       });
 
@@ -309,7 +314,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
   };
 
   const handleSendMessage = (message: string) => {
-    if (!currentChat || !token) return;
+    if (!currentChat || !apiKey) return;
 
     const updatedChat = { ...currentChat };
     
@@ -335,12 +340,12 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
     // Track message in backend
     fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/admin/track/message`, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${token}` }
+      headers: { 'x-api-key': apiKey }
     }).catch(err => console.error('Failed to track message:', err));
   };
 
   const handleAssistantMessage = (content: string, formattedContent?: string) => {
-    if (!token) return;
+    if (!apiKey) return;
 
     setChats(prevChats => {
       const chatIndex = prevChats.findIndex(c => c.id === currentChatId);
@@ -644,7 +649,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
             onNewChat={handleNewChat}
             onDeleteChat={handleDeleteChat}
             onClearAll={handleClearAll}
-            authToken={token}
+            authToken={apiKey}
           />
 
           {/* Main Chat Area */}
@@ -665,7 +670,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
                 chat={currentChat}
                 onSendMessage={handleSendMessage}
                 onAssistantMessage={handleAssistantMessage}
-                authToken={token}
+                authToken={apiKey}
                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
                 sidebarOpen={sidebarOpen}
               />

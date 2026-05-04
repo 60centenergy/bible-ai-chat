@@ -91,7 +91,7 @@ function App() {
 
   // If admin, show admin dashboard
   if (authUser?.isAdmin) {
-    return <AdminDashboard token={apiKey} username={authUser.username} onLogout={handleLogout} />;
+    return <AdminDashboard apiKey={apiKey} username={authUser.username} onLogout={handleLogout} />;
   }
 
   const currentChat = chats.find(chat => chat.id === currentChatId);
