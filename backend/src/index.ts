@@ -101,11 +101,25 @@ startServer();
 // Middleware
 app.use(cors({
   origin: (origin: string | undefined, callback: (err: Error | null, allow?: boolean) => void) => {
-    const allowedOrigins = process.env.CORS_ORIGIN?.split(',') || ['*'];
+    // Default allowed origins
+    const defaultOrigins = [
+      'https://bible-ai-chat.pages.dev',  // Cloudflare Pages
+      'https://60centenergy.com',          // Custom domain
+      'https://www.60centenergy.com',      // Custom domain with www
+      'http://localhost:3000',             // Local development
+      'http://localhost:5000',             // Local backend
+    ];
+    
+    const allowedOrigins = process.env.CORS_ORIGIN 
+      ? process.env.CORS_ORIGIN.split(',') 
+      : defaultOrigins;
+    
+    // Allow if no origin (same-origin requests) or if origin is in allowed list or * is allowed
     if (!origin || allowedOrigins.includes(origin) || allowedOrigins.includes('*')) {
       callback(null, true);
     } else {
-      callback(new Error('Not allowed by CORS'));
+      console.warn(`CORS rejected origin: ${origin}`);
+      callback(null, false);
     }
   },
   credentials: false
