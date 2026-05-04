@@ -98,16 +98,19 @@ async function startServer() {
 // Call initialization
 startServer();
 
-// CORS - Set headers manually FIRST (before any other middleware)
+// CORS - Most aggressive approach: Set on EVERY response
 app.use((req: Request, res: Response, next: NextFunction) => {
-  res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
-  res.setHeader('Access-Control-Max-Age', '86400');
+  // Set CORS headers on response object before anything else
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Credentials', 'false');
+  res.header('Access-Control-Allow-Methods', 'GET,HEAD,PUT,PATCH,POST,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type,Authorization');
+  res.header('Access-Control-Max-Age', '86400');
+  res.header('Vary', 'Origin');
   
-  // For preflight requests, respond with 200 OK
+  // Handle preflight OPTIONS requests
   if (req.method === 'OPTIONS') {
-    return res.send(200);
+    return res.status(200).end();
   }
   
   next();
@@ -174,6 +177,11 @@ interface ApiResponse<T> {
 // Health check endpoint
 app.get('/api/health', (req: Request, res: Response) => {
   res.json({ success: true, data: { status: 'OK' } } as ApiResponse<{ status: string }>);
+});
+
+// CORS test endpoint - no auth required
+app.get('/api/test', (req: Request, res: Response) => {
+  res.json({ success: true, message: 'CORS is working!', timestamp: new Date().toISOString() });
 });
 
 // Login endpoint
