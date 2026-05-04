@@ -148,6 +148,18 @@ const authenticateToken = async (req: any, res: Response, next: NextFunction) =>
     }
 
     // Then, check database for individual user API keys
+    const user = await getQuery('SELECT id, username, is_admin FROM users WHERE api_key = ?', [apiKey]);
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized: Invalid API key'
+      }); 
+    }
+
+    req.user = {
+      userId: user.id,
+      username: user.username,
       isAdmin: user.is_admin === 1
     };
 
