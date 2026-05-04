@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
-import AdminDashboard from './components/AdminDashboard';
 import { PasswordPrompt } from './components/PasswordPrompt';
 import { Chat } from './types';
 import { storageService } from './utils/storage';

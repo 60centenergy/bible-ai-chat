@@ -649,7 +649,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
             onNewChat={handleNewChat}
             onDeleteChat={handleDeleteChat}
             onClearAll={handleClearAll}
-            authToken={apiKey}
+            onLogout={() => {}}
           />
 
           {/* Main Chat Area */}
@@ -670,7 +670,6 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
                 chat={currentChat}
                 onSendMessage={handleSendMessage}
                 onAssistantMessage={handleAssistantMessage}
-                authToken={apiKey}
                 onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
                 sidebarOpen={sidebarOpen}
               />

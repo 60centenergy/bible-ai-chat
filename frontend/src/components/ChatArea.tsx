@@ -142,7 +142,7 @@ export default function ChatArea({
       // Send to API
       const response = await apiService.sendMessage({
         messages: messagesForApi
-      }, authToken);
+      });
 
       // Add assistant message
       onAssistantMessage(response.content, response.formattedContent);
