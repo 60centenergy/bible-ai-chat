@@ -56,54 +56,6 @@ async function initializeKnowledgeBase() {
 // Initialize database
 let dbInitialized = false;
 
-async function startServer() {
-  try {
-    await initializeDatabase();
-    dbInitialized = true;
-    console.log('✓ Database initialized');
-    
-    // Create default admin user if it doesn't exist
-    const adminExists = await getQuery('SELECT id FROM users WHERE username = ?', ['admin']);
-    if (!adminExists) {
-      const hashedPassword = await hashPassword('admin');
-      await runQuery(
-        'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)',
-        ['admin', hashedPassword, 1]
-      );
-      console.log('✓ Default admin user created (username: admin, password: admin)');
-      console.log('⚠️  IMPORTANT: Change the admin password after first login!');
-    }
-    
-    // Create test user if it doesn't exist
-    const testUserExists = await getQuery('SELECT id FROM users WHERE username = ?', ['test']);
-    if (!testUserExists) {
-      const hashedPassword = await hashPassword('test123');
-      await runQuery(
-        'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)',
-        ['test', hashedPassword, 0]
-      );
-      console.log('✓ Test user created (username: test, password: test123, is_admin: false)');
-    }
-    
-    // Initialize knowledge base
-    await initializeKnowledgeBase();
-    
-    // Start the server
-    app.listen(PORT, '0.0.0.0', () => {
-      console.log(`🚀 Bible AI Server running on http://0.0.0.0:${PORT}`);
-      console.log(`📖 Model: ${MODEL}`);
-      console.log(`🔑 API Key configured: ${process.env.GROQ_API_KEY ? 'Yes' : 'No'}`);
-      console.log(`✅ CORS middleware active - OPTIONS requests handled`);
-    });
-  } catch (error) {
-    console.error('Failed to start server:', error);
-    process.exit(1);
-  }
-}
-
-// Call initialization
-startServer();
-
 // CORS - Most aggressive approach: Set on EVERY response
 app.use((req: Request, res: Response, next: NextFunction) => {
   // Set CORS headers on response object before anything else
@@ -962,3 +914,52 @@ app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     error: 'Internal server error'
   } as ApiResponse<never>);
 });
+
+// Start server after all routes and middleware are configured
+async function startServer() {
+  try {
+    await initializeDatabase();
+    dbInitialized = true;
+    console.log('✓ Database initialized');
+    
+    // Create default admin user if it doesn't exist
+    const adminExists = await getQuery('SELECT id FROM users WHERE username = ?', ['admin']);
+    if (!adminExists) {
+      const hashedPassword = await hashPassword('admin');
+      await runQuery(
+        'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)',
+        ['admin', hashedPassword, 1]
+      );
+      console.log('✓ Default admin user created (username: admin, password: admin)');
+      console.log('⚠️  IMPORTANT: Change the admin password after first login!');
+    }
+    
+    // Create test user if it doesn't exist
+    const testUserExists = await getQuery('SELECT id FROM users WHERE username = ?', ['test']);
+    if (!testUserExists) {
+      const hashedPassword = await hashPassword('test123');
+      await runQuery(
+        'INSERT INTO users (username, password_hash, is_admin) VALUES (?, ?, ?)',
+        ['test', hashedPassword, 0]
+      );
+      console.log('✓ Test user created (username: test, password: test123, is_admin: false)');
+    }
+    
+    // Initialize knowledge base
+    await initializeKnowledgeBase();
+    
+    // Start the server
+    app.listen(PORT, '0.0.0.0', () => {
+      console.log(`🚀 Bible AI Server running on http://0.0.0.0:${PORT}`);
+      console.log(`📖 Model: ${MODEL}`);
+      console.log(`🔑 API Key configured: ${process.env.GROQ_API_KEY ? 'Yes' : 'No'}`);
+      console.log(`✅ All middleware and routes configured`);
+    });
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
+}
+
+// Initialize the server
+startServer();
