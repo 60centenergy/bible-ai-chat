@@ -23,10 +23,15 @@ const PORT = parseInt(process.env.PORT || '5000', 10);
 
 // Initialize Groq client
 const groq = new Groq({
-  apiKey: process.env.GROQ_API_KEY,
+  apiKey: process.env.GROQ_API_KEY || 'sk-placeholder',
 });
 
 const MODEL = process.env.GROQ_MODEL || 'openai/gpt-oss-120b';
+
+// Check if GROQ API key is configured
+if (!process.env.GROQ_API_KEY) {
+  console.warn('⚠️ WARNING: GROQ_API_KEY not set. AI responses will fail.');
+}
 
 // Initialize knowledge base
 let knowledgeChunks: KnowledgeChunk[] = [];
