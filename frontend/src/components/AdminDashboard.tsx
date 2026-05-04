@@ -7,7 +7,7 @@ import { generateId, generateChatTitle } from '../utils/generateTitle';
 import { storageService } from '../utils/storage';
 
 interface AdminDashboardProps {
-  apiKey: string;
+  token: string;
   username: string;
   onLogout: () => void;
 }
@@ -39,7 +39,7 @@ interface Stats {
   recentActivity: any[];
 }
 
-export default function AdminDashboard({ apiKey, username, onLogout }: AdminDashboardProps) {
+export default function AdminDashboard({ token, username, onLogout }: AdminDashboardProps) {
   const [users, setUsers] = useState<User[]>([]);
   const [activities, setActivities] = useState<ActivityLog[]>([]);
   const [stats, setStats] = useState<Stats | null>(null);
@@ -75,17 +75,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(true);
 
-  // Smart API URL detection (same as apiService)
-  const getApiUrl = () => {
-    const hostname = window.location.hostname;
-    if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168')) {
-      return 'http://localhost:5000/api';
-    } else {
-      // Production: call backend directly (has CORS headers configured)
-      return 'https://bible-ai-backend-3flg.onrender.com/api';
-    }
-  };
-  const apiUrl = getApiUrl();
+  const apiUrl = `http://${window.location.hostname}:5000/api`;
 
   const fetchData = async () => {
     setIsLoading(true);
@@ -94,7 +84,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
     try {
       // Fetch stats
       const statsResponse = await fetch(`${apiUrl}/admin/stats`, {
-        headers: { 'x-api-key': apiKey },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
@@ -103,7 +93,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
 
       // Fetch users
       const usersResponse = await fetch(`${apiUrl}/admin/users`, {
-        headers: { 'x-api-key': apiKey },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (usersResponse.ok) {
         const usersData = await usersResponse.json();
@@ -112,7 +102,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
 
       // Fetch activity
       const activityResponse = await fetch(`${apiUrl}/admin/activity?limit=50`, {
-        headers: { 'x-api-key': apiKey },
+        headers: { Authorization: `Bearer ${token}` },
       });
       if (activityResponse.ok) {
         const activityData = await activityResponse.json();
@@ -124,11 +114,6 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
       setIsLoading(false);
     }
   };
-
-  // Load admin data on mount
-  useEffect(() => {
-    fetchData();
-  }, []);
 
   // Load admin's chats from localStorage
   useEffect(() => {
@@ -189,7 +174,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           username: newUserUsername,
@@ -241,7 +226,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
         method: 'PATCH',
         headers: {
           'Content-Type': 'application/json',
-          'x-api-key': apiKey
+          Authorization: `Bearer ${token}`
         },
         body: JSON.stringify({
           username: editingUsername,
@@ -288,7 +273,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
       const response = await fetch(`${apiUrl}/admin/users/${deleteUserId}`, {
         method: 'DELETE',
         headers: {
-          'x-api-key': apiKey
+          Authorization: `Bearer ${token}`
         }
       });
 
@@ -314,7 +299,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
   };
 
   const handleSendMessage = (message: string) => {
-    if (!currentChat || !apiKey) return;
+    if (!currentChat || !token) return;
 
     const updatedChat = { ...currentChat };
     
@@ -338,14 +323,14 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
     storageService.saveChat(updatedChat, username);
 
     // Track message in backend
-    fetch(`${apiUrl}/admin/track/message`, {
+    fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/admin/track/message`, {
       method: 'POST',
-      headers: { 'x-api-key': apiKey }
+      headers: { Authorization: `Bearer ${token}` }
     }).catch(err => console.error('Failed to track message:', err));
   };
 
   const handleAssistantMessage = (content: string, formattedContent?: string) => {
-    if (!apiKey) return;
+    if (!token) return;
 
     setChats(prevChats => {
       const chatIndex = prevChats.findIndex(c => c.id === currentChatId);
@@ -649,7 +634,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
             onNewChat={handleNewChat}
             onDeleteChat={handleDeleteChat}
             onClearAll={handleClearAll}
-            onLogout={() => {}}
+            authToken={token}
           />
 
           {/* Main Chat Area */}

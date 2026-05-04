@@ -202,7 +202,6 @@ function App() {
           chat={currentChat}
           onSendMessage={handleSendMessage}
           onAssistantMessage={handleAssistantMessage}
-          authToken={authToken}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           sidebarOpen={sidebarOpen}
         />

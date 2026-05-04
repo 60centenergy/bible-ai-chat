@@ -17,16 +17,7 @@ export default function Login({ onLogin }: LoginProps) {
     setIsLoading(true);
 
     try {
-      // API URL detection
-      const hostname = window.location.hostname;
-      let apiUrl: string;
-      if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168')) {
-        apiUrl = 'http://localhost:5000/api';
-      } else {
-        // Production: use relative URL (proxied through Cloudflare Functions)
-        apiUrl = '/api';
-      }
-      
+      const apiUrl = `${window.location.protocol}//${window.location.hostname}:5000/api`;
       const response = await fetch(`${apiUrl}/auth/login`, {
         method: 'POST',
         headers: {

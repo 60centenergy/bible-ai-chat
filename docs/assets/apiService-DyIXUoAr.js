@@ -1,26 +1,4 @@
-import { ChatRequest, ChatResponse } from '../types';
-
-class ApiService {
-  private groqApiKey: string;
-  private groqModel: string = 'mixtral-8x7b-32768';
-
-  constructor() {
-    this.groqApiKey = import.meta.env.VITE_GROQ_API_KEY || '';
-    
-    if (!this.groqApiKey) {
-      console.warn('⚠️ VITE_GROQ_API_KEY environment variable not set. Chat will not work.');
-    }
-    
-    console.log(`📡 Using Groq API directly (Model: ${this.groqModel})`);
-  }
-
-  async sendMessage(request: ChatRequest): Promise<ChatResponse> {
-    if (!this.groqApiKey) {
-      throw new Error('Groq API key is not configured. Please set VITE_GROQ_API_KEY environment variable.');
-    }
-
-    try {
-      const systemPrompt = `Role & Purpose:
+var e=new class{groqApiKey;groqModel=`mixtral-8x7b-32768`;constructor(){this.groqApiKey=``,this.groqApiKey||console.warn(`⚠️ VITE_GROQ_API_KEY environment variable not set. Chat will not work.`),console.log(`📡 Using Groq API directly (Model: ${this.groqModel})`)}async sendMessage(e){if(!this.groqApiKey)throw Error(`Groq API key is not configured. Please set VITE_GROQ_API_KEY environment variable.`);try{let t=await fetch(`https://api.groq.com/openai/v1/chat/completions`,{method:`POST`,headers:{Authorization:`Bearer ${this.groqApiKey}`,"Content-Type":`application/json`},body:JSON.stringify({model:this.groqModel,messages:[{role:`system`,content:`Role & Purpose:
 You are a Bible Assistant, dedicated to answering questions exclusively from Scripture using the ESV translation. Always reply in clear, natural English. Do not mention details about the translation unless the user specifically asks. 
 
 Your answers must be grounded solely in the text of Scripture. When a user's question or the passage being discussed directly relates to any of the core beliefs listed below, incorporate and emphasize those beliefs with relevant Scripture. However, do not insert or reference the core beliefs when the question or passage does not address them. Stay strictly on topic.
@@ -68,52 +46,5 @@ Response Guidelines:
    - Do not add any recurring closing statements, slogans, fixed endings, or extra directives at the end of responses.
 
 Important Instruction on Core Beliefs:
-Only reference or emphasize the core beliefs above when the user's question or the specific passage directly concerns one of those topics (e.g., baptism, worship, salvation, church unity, etc.). Do not weave them into unrelated questions.`;
-
-      const response = await fetch('https://api.groq.com/openai/v1/chat/completions', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${this.groqApiKey}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          model: this.groqModel,
-          messages: [
-            { role: 'system', content: systemPrompt },
-            ...request.messages
-          ],
-          temperature: 0.7,
-          max_tokens: 2000,
-        }),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error?.message || `Groq API error: ${response.status}`);
-      }
-
-      const data = await response.json();
-      const assistantMessage = data.choices[0]?.message?.content || '';
-
-      if (!assistantMessage) {
-        throw new Error('No response from AI model');
-      }
-
-      return {
-        content: assistantMessage,
-        formattedContent: assistantMessage // Frontend will handle markdown rendering
-      };
-    } catch (error) {
-      if (error instanceof Error) {
-        throw new Error(`Failed to send message: ${error.message}`);
-      }
-      throw error;
-    }
-  }
-
-  async healthCheck(): Promise<boolean> {
-    return this.groqApiKey !== '';
-  }
-}
-
-export const apiService = new ApiService();
+Only reference or emphasize the core beliefs above when the user's question or the specific passage directly concerns one of those topics (e.g., baptism, worship, salvation, church unity, etc.). Do not weave them into unrelated questions.`},...e.messages],temperature:.7,max_tokens:2e3})});if(!t.ok){let e=await t.json();throw Error(e.error?.message||`Groq API error: ${t.status}`)}let n=(await t.json()).choices[0]?.message?.content||``;if(!n)throw Error(`No response from AI model`);return{content:n,formattedContent:n}}catch(e){throw e instanceof Error?Error(`Failed to send message: ${e.message}`):e}}async healthCheck(){return this.groqApiKey!==``}};export{e as apiService};
+//# sourceMappingURL=apiService-DyIXUoAr.js.map
