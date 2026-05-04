@@ -160,19 +160,19 @@ const authenticateToken = async (req: any, res: Response, next: NextFunction) =>
   }
 };
 
-// Keep old JWT logic for reference but comment it out
-const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
-  const token = getTokenFromRequest(req);
-  if (!decoded) {
-    return res.status(401).json({
-      success: false,
-      error: 'Unauthorized: Invalid or expired token'
-    });
-  }
-
-  req.user = decoded;
-  next();
-};
+// Old JWT logic kept for reference - now using API key authentication instead
+// const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
+//   const token = getTokenFromRequest(req);
+//   const decoded = verifyToken(token);
+//   if (!decoded) {
+//     return res.status(401).json({
+//       success: false,
+//       error: 'Unauthorized: Invalid or expired token'
+//     });
+//   }
+//   req.user = decoded;
+//   next();
+// };
 
 // Admin-only middleware
 const requireAdmin = (req: any, res: Response, next: NextFunction) => {

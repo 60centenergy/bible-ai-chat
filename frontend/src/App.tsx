@@ -43,8 +43,8 @@ function App() {
           if (response.ok) {
             const data = await response.json();
             setAuthUser({
-              username: data.data.username,
-              isAdmin: data.data.isAdmin
+              username: data.data.user.username,
+              isAdmin: data.data.user.isAdmin
             });
           }
         } catch (error) {
