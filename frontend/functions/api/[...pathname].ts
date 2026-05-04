@@ -8,12 +8,6 @@ export const onRequest: PagesFunction = async (context) => {
   
   try {
     const url = new URL(request.url);
-    
-    // Skip /api/groq - it's handled by the dedicated groq.ts function
-    if (url.pathname === '/api/groq') {
-      return new Response(JSON.stringify({ error: 'Not found' }), { status: 404 });
-    }
-    
     const backendUrl = 'https://bible-ai-backend-3flg.onrender.com';
     
     // Build target URL - preserve the /api path

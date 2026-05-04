@@ -262,44 +262,52 @@ app.post('/api/auth/verify', authenticateToken, (req: any, res: Response) => {
   });
 });
 
-// Test endpoint to check if Groq is responding (no auth required)
-app.post('/api/test-groq', async (req: any, res: Response) => {
+// Simple Groq proxy endpoint (no auth required)
+app.post('/api/groq', async (req: any, res: Response) => {
   try {
-    console.log('🧪 Testing Groq API connection...');
+    console.log('📤 Groq proxy request received');
     
     if (!process.env.GROQ_API_KEY) {
+      console.error('❌ GROQ_API_KEY not set');
       return res.status(400).json({
         success: false,
-        error: 'GROQ_API_KEY not set',
-        hint: 'Set GROQ_API_KEY environment variable'
+        error: 'Groq API key not configured',
       });
     }
 
-    const testMessage = 'Hello, can you respond with just "OK"?';
-    console.log(`📤 Sending test prompt to Groq: "${testMessage}"`);
+    const { messages } = req.body as { messages: Array<{ role: string; content: string }> };
+    
+    if (!messages || !Array.isArray(messages)) {
+      return res.status(400).json({
+        success: false,
+        error: 'messages array required',
+      });
+    }
+
+    console.log(`📤 Calling Groq with ${messages.length} messages`);
     
     const completion = await groq.chat.completions.create({
-      messages: [{ role: 'user' as const, content: testMessage }],
+      messages: messages.map(m => ({
+        role: m.role as 'user' | 'assistant' | 'system',
+        content: m.content
+      })),
       model: MODEL,
       temperature: 0.7,
-      max_tokens: 100,
+      max_tokens: 2000,
     });
 
     const response = completion.choices[0]?.message?.content || '';
-    console.log(`✅ Groq responded: "${response}"`);
+    console.log(`✅ Groq response received (${response.length} chars)`);
     
     res.json({
       success: true,
-      groqStatus: 'connected',
-      model: MODEL,
-      testResponse: response
+      message: response,
     });
   } catch (error) {
-    console.error('❌ Groq test failed:', error);
+    console.error('❌ Groq proxy error:', error);
     res.status(500).json({
       success: false,
-      error: error instanceof Error ? error.message : 'Groq test failed',
-      errorType: error instanceof Error ? error.constructor.name : 'unknown'
+      error: error instanceof Error ? error.message : 'Groq request failed',
     });
   }
 });

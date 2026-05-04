@@ -5,8 +5,16 @@ class ApiService {
   private client: AxiosInstance;
 
   constructor() {
-    // Call Groq via secure Cloudflare Pages Function (same origin, no CORS)
-    const apiUrl = '/api';
+    // Call Groq via backend (Render) - secure, API key server-side
+    const hostname = window.location.hostname;
+    let apiUrl: string;
+    
+    if (hostname === 'localhost' || hostname === '127.0.0.1') {
+      apiUrl = 'http://localhost:5000/api';
+    } else {
+      // Production: backend on Render
+      apiUrl = 'https://bible-ai-backend-3flg.onrender.com/api';
+    }
     
     this.client = axios.create({
       baseURL: apiUrl,
@@ -16,24 +24,20 @@ class ApiService {
       }
     });
     
-    console.log(`📡 Groq proxy endpoint: ${apiUrl}/groq`);
-    console.log('🔒 Using secure Cloudflare Pages function (API key server-side)');
+    console.log(`📡 API endpoint: ${apiUrl}`);
+    console.log('🔒 Using backend proxy (Groq API key server-side on Render)');
   }
 
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
     try {
-      // Send messages to Cloudflare Pages Groq proxy
-      // The function will add the API key server-side
-      const groqRequest = {
-        messages: request.messages,
-      };
-
+      // Send to backend /api/groq endpoint
       const response = await this.client.post<{
         success: boolean;
         message?: string;
         error?: string;
-        usage?: { prompt_tokens: number; completion_tokens: number };
-      }>('/groq', groqRequest);
+      }>('/groq', {
+        messages: request.messages,
+      });
 
       if (!response.data.success) {
         throw new Error(response.data.error || 'Failed to get response from Groq');
@@ -57,7 +61,6 @@ class ApiService {
 
   async healthCheck(): Promise<boolean> {
     try {
-      // Simple check - try to call groq endpoint
       const response = await this.client.post<{
         success: boolean;
       }>('/groq', {
