@@ -1,5 +1,5 @@
 import axios, { AxiosInstance } from 'axios';
-import { ChatRequest, ChatResponse, ApiResponse } from '../types';
+import { ChatRequest, ChatResponse } from '../types';
 
 class ApiService {
   private client: AxiosInstance;
@@ -44,7 +44,6 @@ class ApiService {
       }
 
       return {
-        role: 'assistant',
         content: response.data.message,
       };
     } catch (error) {
