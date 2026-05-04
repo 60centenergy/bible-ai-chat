@@ -81,8 +81,8 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168')) {
       return 'http://localhost:5000/api';
     } else {
-      // Production: use relative URL (proxied through Cloudflare Functions)
-      return '/api';
+      // Production: call backend directly (has CORS headers configured)
+      return 'https://bible-ai-backend-3flg.onrender.com/api';
     }
   };
   const apiUrl = getApiUrl();
@@ -338,7 +338,7 @@ export default function AdminDashboard({ apiKey, username, onLogout }: AdminDash
     storageService.saveChat(updatedChat, username);
 
     // Track message in backend
-    fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/admin/track/message`, {
+    fetch(`${apiUrl}/admin/track/message`, {
       method: 'POST',
       headers: { 'x-api-key': apiKey }
     }).catch(err => console.error('Failed to track message:', err));

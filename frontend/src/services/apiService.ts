@@ -13,8 +13,8 @@ class ApiService {
     if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168')) {
       apiUrl = 'http://localhost:5000/api';
     } else {
-      // Production: use relative URL (proxied through Cloudflare Functions)
-      apiUrl = '/api';
+      // Production: call backend directly (has CORS headers configured)
+      apiUrl = 'https://bible-ai-backend-3flg.onrender.com/api';
     }
     
     this.client = axios.create({

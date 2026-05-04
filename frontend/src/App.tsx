@@ -31,9 +31,11 @@ function App() {
         // Verify the API key is valid
         try {
           const hostname = window.location.hostname;
-          const apiUrl = (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168'))
-            ? 'http://localhost:5000/api'
-            : '/api';
+          let apiUrl = 'https://bible-ai-backend-3flg.onrender.com/api';
+          
+          if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168')) {
+            apiUrl = 'http://localhost:5000/api';
+          }
           
           const response = await fetch(`${apiUrl}/auth/verify`, {
             method: 'POST',
