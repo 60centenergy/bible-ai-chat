@@ -14,7 +14,7 @@ class ApiService {
       apiUrl = `http://${hostname}:5000/api`;
     } else {
       // Production: use environment variable or fallback
-      apiUrl = import.meta.env.VITE_API_URL || 'https://bible-ai-backend.railway.app/api';
+      apiUrl = import.meta.env.VITE_API_URL || 'https://bible-ai-backend-3flg.onrender.com/api';
     }
     
     this.client = axios.create({
