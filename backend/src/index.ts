@@ -124,18 +124,45 @@ app.use((req: Request, res: Response, next: NextFunction) => {
   next();
 });
 
-// Auth middleware - verify JWT token
-const authenticateToken = (req: Request, res: Response, next: NextFunction) => {
-  const token = getTokenFromRequest(req);
+// Auth middleware - verify API key
+const authenticateToken = async (req: any, res: Response, next: NextFunction) => {
+  const apiKey = req.headers['x-api-key'];
   
-  if (!token) {
+  if (!apiKey) {
     return res.status(401).json({
       success: false,
-      error: 'Unauthorized: No token provided'
+      error: 'Unauthorized: No API key provided'
     });
   }
 
-  const decoded = verifyToken(token);
+  try {
+    const user = await getQuery('SELECT id, username, is_admin FROM users WHERE api_key = ?', [apiKey]);
+    
+    if (!user) {
+      return res.status(401).json({
+        success: false,
+        error: 'Unauthorized: Invalid API key'
+      });
+    }
+
+    req.user = {
+      userId: user.id,
+      username: user.username,
+      isAdmin: user.is_admin === 1
+    };
+
+    next();
+  } catch (error) {
+    return res.status(401).json({
+      success: false,
+      error: 'Unauthorized: Token verification failed'
+    });
+  }
+};
+
+// Keep old JWT logic for reference but comment it out
+const verifyJWT = (req: Request, res: Response, next: NextFunction) => {
+  const token = getTokenFromRequest(req);
   if (!decoded) {
     return res.status(401).json({
       success: false,

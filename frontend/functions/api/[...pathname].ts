@@ -1,62 +1,50 @@
 /**
- * Cloudflare Pages Function - API Proxy
- * Routes all /api/* requests to the Render backend
- * Eliminates CORS issues by proxying server-to-server
+ * Cloudflare Pages Function - Simple API Proxy
+ * Routes /api/* requests to backend with API key forwarding
+ * Uses x-api-key header authentication (no body complexity)
  */
 
-interface Env {
-  BACKEND_URL?: string;
-}
-
-export const onRequest: PagesFunction<Env> = async (context) => {
+export const onRequest: PagesFunction = async (context) => {
   const { request } = context;
   const url = new URL(request.url);
   
-  // Construct the backend URL
+  // Backend URL
   const backendUrl = 'https://bible-ai-backend-3flg.onrender.com';
-  const apiPath = url.pathname.replace('/api', '/api'); // Keep the /api prefix
+  const apiPath = url.pathname.replace('/api', '/api');
   const queryString = url.search;
-  
   const targetUrl = `${backendUrl}${apiPath}${queryString}`;
   
-  // Clone the request to preserve the body stream
-  const clonedRequest = request.clone();
+  // Clone headers and pass through
+  const headers = new Headers(request.headers);
   
-  // Forward the request to the backend
+  // Construct request init
   const init: RequestInit = {
-    method: clonedRequest.method,
-    headers: new Headers(clonedRequest.headers),
+    method: request.method,
+    headers,
   };
   
-  // Forward request body if present (for POST, PUT, PATCH, etc.)
-  if (clonedRequest.method !== 'GET' && clonedRequest.method !== 'HEAD' && clonedRequest.body) {
-    init.body = clonedRequest.body;
+  // Forward body for non-GET requests
+  if (request.method !== 'GET' && request.method !== 'HEAD') {
+    const cloned = request.clone();
+    if (cloned.body) {
+      const buffer = await cloned.arrayBuffer();
+      init.body = buffer;
+    }
   }
   
   try {
     const response = await fetch(targetUrl, init);
-    
-    // Read the response body
     const responseBody = await response.text();
     
-    // Create a new response with the backend's response
-    const responseInit: ResponseInit = {
+    return new Response(responseBody, {
       status: response.status,
       statusText: response.statusText,
       headers: new Headers(response.headers),
-    };
-    
-    // Ensure CORS headers are set for browser
-    responseInit.headers?.set('Access-Control-Allow-Origin', '*');
-    
-    return new Response(responseBody, responseInit);
+    });
   } catch (error) {
     return new Response(
-      JSON.stringify({ success: false, error: 'Backend request failed', details: String(error) }),
-      { 
-        status: 503, 
-        headers: { 'Content-Type': 'application/json' }
-      }
+      JSON.stringify({ success: false, error: String(error) }),
+      { status: 503, headers: { 'Content-Type': 'application/json' } }
     );
   }
 };

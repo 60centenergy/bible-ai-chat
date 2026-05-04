@@ -7,7 +7,7 @@ import { generateId, generateChatTitle } from '../utils/generateTitle';
 import { storageService } from '../utils/storage';
 
 interface AdminDashboardProps {
-  token: string;
+  apiKey: string;
   username: string;
   onLogout: () => void;
 }
@@ -94,7 +94,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
     try {
       // Fetch stats
       const statsResponse = await fetch(`${apiUrl}/admin/stats`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 'x-api-key': apiKey },
       });
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
@@ -103,7 +103,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
 
       // Fetch users
       const usersResponse = await fetch(`${apiUrl}/admin/users`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 'x-api-key': apiKey },
       });
       if (usersResponse.ok) {
         const usersData = await usersResponse.json();
@@ -112,7 +112,7 @@ export default function AdminDashboard({ token, username, onLogout }: AdminDashb
 
       // Fetch activity
       const activityResponse = await fetch(`${apiUrl}/admin/activity?limit=50`, {
-        headers: { Authorization: `Bearer ${token}` },
+        headers: { 'x-api-key': apiKey },
       });
       if (activityResponse.ok) {
         const activityData = await activityResponse.json();

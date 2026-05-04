@@ -28,14 +28,14 @@ class ApiService {
     console.log(`📡 API endpoint: ${apiUrl}`);
   }
 
-  async sendMessage(request: ChatRequest, token?: string): Promise<ChatResponse> {
+  async sendMessage(request: ChatRequest, apiKey?: string): Promise<ChatResponse> {
     try {
       const headers: any = {
         'Content-Type': 'application/json',
       };
       
-      if (token) {
-        headers['Authorization'] = `Bearer ${token}`;
+      if (apiKey) {
+        headers['x-api-key'] = apiKey;
       }
 
       const response = await this.client.post<ApiResponse<ChatResponse>>('/chat', request, { headers });

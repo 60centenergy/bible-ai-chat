@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import Sidebar from './components/Sidebar';
 import ChatArea from './components/ChatArea';
-import Login from './components/Login';
 import AdminDashboard from './components/AdminDashboard';
 import { Chat } from './types';
 import { storageService } from './utils/storage';
@@ -13,21 +12,50 @@ interface AuthUser {
 }
 
 function App() {
-  const [authToken, setAuthToken] = useState<string | null>(null);
+  const [apiKey, setApiKey] = useState<string | null>(null);
   const [authUser, setAuthUser] = useState<AuthUser | null>(null);
   const [chats, setChats] = useState<Chat[]>([]);
   const [currentChatId, setCurrentChatId] = useState<string | null>(null);
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-  // Check if user is already logged in on mount
+  // Initialize API key from environment on mount
   useEffect(() => {
-    const token = sessionStorage.getItem('authToken');
-    const user = sessionStorage.getItem('user');
+    const initializeAuth = async () => {
+      // API key should be set via environment variable or config
+      const key = import.meta.env.VITE_API_KEY || sessionStorage.getItem('apiKey');
+      
+      if (key) {
+        setApiKey(key);
+        
+        // Verify the API key is valid
+        try {
+          const hostname = window.location.hostname;
+          const apiUrl = (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168'))
+            ? 'http://localhost:5000/api'
+            : '/api';
+          
+          const response = await fetch(`${apiUrl}/auth/verify`, {
+            method: 'POST',
+            headers: { 'x-api-key': key }
+          });
+          
+          if (response.ok) {
+            const data = await response.json();
+            setAuthUser({
+              username: data.data.username,
+              isAdmin: data.data.isAdmin
+            });
+          }
+        } catch (error) {
+          console.error('Auth verification failed:', error);
+        }
+      }
+      
+      setIsLoading(false);
+    };
     
-    if (token && user) {
-      setAuthToken(token);
-      setAuthUser(JSON.parse(user));
-    }
+    initializeAuth();
   }, []);
 
   // Load chats from storage on mount (per-user storage)
@@ -43,28 +71,27 @@ function App() {
     }
   }, [authUser]);
 
-  const handleLogin = (token: string, user: AuthUser) => {
-    setAuthToken(token);
-    setAuthUser(user);
-  };
-
   const handleLogout = () => {
-    setAuthToken(null);
+    setApiKey(null);
     setAuthUser(null);
     setChats([]);
     setCurrentChatId(null);
-    sessionStorage.removeItem('authToken');
-    sessionStorage.removeItem('user');
+    sessionStorage.removeItem('apiKey');
   };
 
-  // If not authenticated, show login page
-  if (!authToken || !authUser) {
-    return <Login onLogin={handleLogin} />;
+  // If not authenticated, show loading or error
+  if (!apiKey) {
+    return <div className="flex items-center justify-center h-screen">Loading...</div>;
+  }
+
+  // If no auth user loaded yet, wait
+  if (!authUser && !isLoading) {
+    return <div className="flex items-center justify-center h-screen">Authentication failed</div>;
   }
 
   // If admin, show admin dashboard
-  if (authUser.isAdmin) {
-    return <AdminDashboard token={authToken} username={authUser.username} onLogout={handleLogout} />;
+  if (authUser?.isAdmin) {
+    return <AdminDashboard token={apiKey} username={authUser.username} onLogout={handleLogout} />;
   }
 
   const currentChat = chats.find(chat => chat.id === currentChatId);
@@ -87,7 +114,7 @@ function App() {
   };
 
   const handleSendMessage = (message: string) => {
-    if (!currentChat || !authUser || !authToken) return;
+    if (!currentChat || !authUser || !apiKey) return;
 
     const updatedChat = { ...currentChat };
     
@@ -118,12 +145,12 @@ function App() {
     
     fetch(trackUrl, {
       method: 'POST',
-      headers: { Authorization: `Bearer ${authToken}` }
+      headers: { 'x-api-key': apiKey }
     }).catch(err => console.error('Failed to track message:', err));
   };
 
   const handleAssistantMessage = (content: string, formattedContent?: string) => {
-    if (!authUser || !authToken) return;
+    if (!authUser || !apiKey) return;
 
     setChats(prevChats => {
       const chatIndex = prevChats.findIndex(c => c.id === currentChatId);
@@ -188,7 +215,7 @@ function App() {
         onNewChat={handleNewChat}
         onDeleteChat={handleDeleteChat}
         onClearAll={handleClearAllChats}
-        authToken={authToken}
+        authToken={apiKey}
       />
 
       {/* Main Chat Area */}
@@ -200,7 +227,7 @@ function App() {
           chat={currentChat}
           onSendMessage={handleSendMessage}
           onAssistantMessage={handleAssistantMessage}
-          authToken={authToken}
+          authToken={apiKey}
           onToggleSidebar={() => setSidebarOpen(!sidebarOpen)}
           sidebarOpen={sidebarOpen}
         />
