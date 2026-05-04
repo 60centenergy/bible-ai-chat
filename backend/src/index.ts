@@ -98,18 +98,20 @@ async function startServer() {
 // Call initialization
 startServer();
 
-// CORS Configuration - Very Permissive for Development
-const corsOptions = {
-  origin: '*',
-  credentials: false,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  optionsSuccessStatus: 200
-};
-
-app.use(cors(corsOptions));
-// Handle preflight explicitly  
-app.options('*', cors(corsOptions));
+// CORS - Set headers manually FIRST (before any other middleware)
+app.use((req: Request, res: Response, next: NextFunction) => {
+  res.setHeader('Access-Control-Allow-Origin', '*');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, HEAD, PUT, PATCH, POST, DELETE, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization');
+  res.setHeader('Access-Control-Max-Age', '86400');
+  
+  // For preflight requests, respond with 200 OK
+  if (req.method === 'OPTIONS') {
+    return res.send(200);
+  }
+  
+  next();
+});
 
 app.use(express.json());
 
