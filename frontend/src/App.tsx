@@ -111,7 +111,12 @@ function App() {
     storageService.saveChat(updatedChat, authUser.username);
 
     // Track message in backend
-    fetch(`${window.location.protocol}//${window.location.hostname}:5000/api/admin/track/message`, {
+    const hostname = window.location.hostname;
+    const trackUrl = (hostname === 'localhost' || hostname === '127.0.0.1' || hostname.startsWith('192.168'))
+      ? 'http://localhost:5000/api/admin/track/message'
+      : 'https://bible-ai-backend-3flg.onrender.com/api/admin/track/message';
+    
+    fetch(trackUrl, {
       method: 'POST',
       headers: { Authorization: `Bearer ${authToken}` }
     }).catch(err => console.error('Failed to track message:', err));
