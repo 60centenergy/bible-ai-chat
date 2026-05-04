@@ -1,42 +1,41 @@
 /**
- * Cloudflare Pages Function - API Proxy
- * Routes /api/* requests to backend and forwards all headers/body
+ * Cloudflare Pages Function - Root Catch-All
+ * Handles all requests and routes /api/* to backend
  */
 
 export const onRequest: PagesFunction = async (context) => {
   const { request } = context;
-  
+  const url = new URL(request.url);
+
+  // Only proxy API requests to backend
+  if (!url.pathname.startsWith('/api/')) {
+    // For non-API requests, return a 404 or let Cloudflare handle it
+    return context.next();
+  }
+
   try {
-    const url = new URL(request.url);
     const backendUrl = 'https://bible-ai-backend-3flg.onrender.com';
-    
-    // Build target URL - preserve the /api path
-    const apiPath = url.pathname; // Already includes /api
-    const queryString = url.search;
-    const targetUrl = `${backendUrl}${apiPath}${queryString}`;
-    
-    // Prepare request options
+    const targetUrl = `${backendUrl}${url.pathname}${url.search}`;
+
+    // Prepare fetch options
     const fetchInit: RequestInit = {
       method: request.method,
       headers: request.headers,
     };
-    
+
     // Handle request body for POST/PATCH/PUT
     if (request.method !== 'GET' && request.method !== 'HEAD' && request.method !== 'OPTIONS') {
-      // Clone and read body
-      const contentType = request.headers.get('content-type');
-      if (contentType && request.body) {
+      if (request.body) {
         const bodyText = await request.text();
         fetchInit.body = bodyText;
       }
     }
-    
+
     // Make request to backend
     const response = await fetch(targetUrl, fetchInit);
-    
-    // Clone response and return
-    const clonedResponse = response.clone();
-    const body = await clonedResponse.text();
+
+    // Return the response from backend
+    const body = await response.text();
     
     return new Response(body, {
       status: response.status,
@@ -44,11 +43,11 @@ export const onRequest: PagesFunction = async (context) => {
       headers: response.headers,
     });
   } catch (error) {
-    console.error('Proxy error:', error);
+    console.error('API proxy error:', error);
     return new Response(
       JSON.stringify({ 
         success: false, 
-        error: 'Proxy error: ' + (error instanceof Error ? error.message : String(error))
+        error: 'API proxy error: ' + (error instanceof Error ? error.message : String(error))
       }),
       { 
         status: 500, 
