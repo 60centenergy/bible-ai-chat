@@ -23,17 +23,18 @@ class ApiService {
   }
 
   private convertScriptureLinksInHtml(html: string): string {
-    // Pattern to match scripture references like "Acts 4:36-37" or "1 Corinthians 13:4-8"
-    // This handles references that are already formatted (in <strong> tags or plain text)
-    const scripturePattern = /([1-3]?\s*[A-Za-z]+)\s+(\d+):(\d+)(?:-(\d+))?(?=[\s\–\-\.\,\<\"\']|$)/g;
+    // Pattern 1: Match scripture references inside <strong> tags like <strong>Acts 4:36</strong>
+    html = html.replace(/<strong>([1-3]?\s*[A-Za-z]+)\s+(\d+):(\d+)(?:-(\d+))?<\/strong>/g, 
+      (_match, book, chapter, verse, endVerse) => {
+        const reference = endVerse 
+          ? `${book.trim()} ${chapter}:${verse}-${endVerse}` 
+          : `${book.trim()} ${chapter}:${verse}`;
+        const encodedRef = encodeURIComponent(reference);
+        return `<strong><a href="https://www.biblegateway.com/passage/?search=${encodedRef}&version=ESV" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${reference}</a></strong>`;
+      }
+    );
     
-    return html.replace(scripturePattern, (_match, book, chapter, verse, endVerse) => {
-      const reference = endVerse 
-        ? `${book.trim()} ${chapter}:${verse}-${endVerse}` 
-        : `${book.trim()} ${chapter}:${verse}`;
-      const encodedRef = encodeURIComponent(reference);
-      return `<a href="https://www.biblegateway.com/passage/?search=${encodedRef}&version=ESV" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${reference}</a>`;
-    });
+    return html;
   }
 
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
