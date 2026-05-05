@@ -177,6 +177,19 @@ function App() {
     storageService.clearAllChats(authUser.username);
   };
 
+  const handleChatsImported = () => {
+    if (!authUser) return;
+    
+    // Reload chats from storage after import
+    const updatedChats = storageService.getAllChats(authUser.username);
+    setChats(updatedChats);
+    
+    // Set current chat to most recent if available
+    if (updatedChats.length > 0 && !currentChatId) {
+      setCurrentChatId(updatedChats[0].id);
+    }
+  };
+
   // Regular user chat interface
   return (
     <div className="flex h-screen bg-gray-50">
@@ -191,6 +204,8 @@ function App() {
         onDeleteChat={handleDeleteChat}
         onClearAll={handleClearAllChats}
         authToken={authToken}
+        username={authUser.username}
+        onChatsImported={handleChatsImported}
       />
 
       {/* Main Chat Area */}

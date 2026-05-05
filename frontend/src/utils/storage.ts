@@ -93,5 +93,129 @@ export const storageService = {
       title: chat.title,
       updatedAt: chat.updatedAt
     }));
+  },
+
+  // Export all chats as JSON
+  exportChats(username?: string): string {
+    try {
+      const chats = this.getAllChats(username);
+      const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        username: username || 'default',
+        chats: chats
+      };
+      return JSON.stringify(exportData, null, 2);
+    } catch (error) {
+      console.error('Error exporting chats:', error);
+      throw error;
+    }
+  },
+
+  // Import chats from JSON
+  importChats(jsonData: string, username?: string, merge: boolean = true): { success: boolean; message: string; importedCount?: number } {
+    try {
+      if (!username) {
+        return { success: false, message: 'Username required for import' };
+      }
+
+      const importData = JSON.parse(jsonData);
+
+      // Validate structure
+      if (!Array.isArray(importData.chats)) {
+        return { success: false, message: 'Invalid export file format' };
+      }
+
+      let chats = merge ? this.getAllChats(username) : [];
+      const incomingChats = importData.chats as Chat[];
+
+      if (merge) {
+        // Merge: add incoming chats, updating existing ones by ID
+        const chatMap = new Map(chats.map(c => [c.id, c]));
+        incomingChats.forEach(chat => {
+          chatMap.set(chat.id, chat);
+        });
+        chats = Array.from(chatMap.values());
+      } else {
+        // Replace: use only incoming chats
+        chats = incomingChats;
+      }
+
+      // Sort by update date (newest first)
+      chats.sort((a, b) => b.updatedAt - a.updatedAt);
+
+      // Enforce max chats limit
+      if (chats.length > MAX_CHATS) {
+        chats = chats.slice(0, MAX_CHATS);
+      }
+
+      const storageKey = getUserStorageKey(username);
+      localStorage.setItem(storageKey, JSON.stringify(chats));
+
+      return {
+        success: true,
+        message: `Successfully imported ${incomingChats.length} chat(s)`,
+        importedCount: incomingChats.length
+      };
+    } catch (error) {
+      console.error('Error importing chats:', error);
+      return { success: false, message: `Import failed: ${error instanceof Error ? error.message : 'Unknown error'}` };
+    }
+  },
+
+  // Export single chat as JSON
+  exportSingleChat(chat: Chat): string {
+    try {
+      const exportData = {
+        version: '1.0',
+        exportDate: new Date().toISOString(),
+        chat: chat
+      };
+      return JSON.stringify(exportData, null, 2);
+    } catch (error) {
+      console.error('Error exporting chat:', error);
+      throw error;
+    }
+  },
+
+  // Download export as file
+  downloadExport(username?: string, filename?: string): void {
+    try {
+      const data = this.exportChats(username);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = filename || `bible-ai-chats-${new Date().toISOString().split('T')[0]}.json`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading export:', error);
+    }
+  },
+
+  // Download single chat as JSON file
+  downloadSingleChatJson(chat: Chat): void {
+    try {
+      const data = this.exportSingleChat(chat);
+      const blob = new Blob([data], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      
+      // Create filename from chat title
+      const title = chat.title.replace(/[^a-z0-9]/gi, '-').toLowerCase();
+      const date = new Date().toISOString().split('T')[0];
+      link.download = `chat-${title}-${date}.json`;
+      
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    } catch (error) {
+      console.error('Error downloading chat:', error);
+    }
   }
 };

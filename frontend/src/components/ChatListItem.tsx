@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MoreVertical, Trash2, Download, AlertCircle } from 'lucide-react';
 import { Chat } from '../types';
 import { exportChatToPdf } from '../utils/exportPdf';
+import { storageService } from '../utils/storage';
 
 interface ChatListItemProps {
   chat: Chat;
@@ -20,7 +21,7 @@ export default function ChatListItem({
   const [isExporting, setIsExporting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  const handleExport = async (e: React.MouseEvent) => {
+  const handleExportPdf = async (e: React.MouseEvent) => {
     e.stopPropagation();
     setIsExporting(true);
     try {
@@ -28,6 +29,20 @@ export default function ChatListItem({
     } catch (error) {
       console.error('Export failed:', error);
       alert('Failed to export chat to PDF');
+    } finally {
+      setIsExporting(false);
+      setShowMenu(false);
+    }
+  };
+
+  const handleExportJson = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    setIsExporting(true);
+    try {
+      storageService.downloadSingleChatJson(chat);
+    } catch (error) {
+      console.error('Export failed:', error);
+      alert('Failed to export chat to JSON');
     } finally {
       setIsExporting(false);
       setShowMenu(false);
@@ -89,12 +104,20 @@ export default function ChatListItem({
       {showMenu && (
         <div className="absolute right-0 top-full mt-1 bg-gray-800 rounded-lg shadow-lg overflow-hidden z-50 min-w-max">
           <button
-            onClick={handleExport}
+            onClick={handleExportPdf}
             disabled={isExporting}
             className="w-full px-4 py-2 text-sm text-left hover:bg-gray-700 flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed transition"
           >
             <Download size={14} />
             {isExporting ? 'Exporting...' : 'Export PDF'}
+          </button>
+          <button
+            onClick={handleExportJson}
+            disabled={isExporting}
+            className="w-full px-4 py-2 text-sm text-left hover:bg-gray-700 flex items-center gap-2 transition disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <Download size={14} />
+            {isExporting ? 'Exporting...' : 'Export Chat'}
           </button>
           <button
             onClick={handleDelete}

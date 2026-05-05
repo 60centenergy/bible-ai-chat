@@ -1,6 +1,7 @@
-import { useState } from 'react';
-import { Plus, Trash2, AlertCircle, MoreVertical } from 'lucide-react';
+import { useState, useRef } from 'react';
+import { Plus, Trash2, AlertCircle, MoreVertical, Download, Upload } from 'lucide-react';
 import { Chat } from '../types';
+import { storageService } from '../utils/storage';
 import ChatListItem from './ChatListItem';
 
 interface SidebarProps {
@@ -13,6 +14,8 @@ interface SidebarProps {
   onDeleteChat: (chatId: string) => void;
   onClearAll: () => void;
   authToken?: string;
+  username?: string;
+  onChatsImported?: () => void;
 }
 
 export default function Sidebar({
@@ -23,10 +26,16 @@ export default function Sidebar({
   onSelectChat,
   onNewChat,
   onDeleteChat,
-  onClearAll
+  onClearAll,
+  username,
+  onChatsImported
 }: SidebarProps) {
   const [showClearConfirm, setShowClearConfirm] = useState(false);
   const [showMenu, setShowMenu] = useState(false);
+  const [showImportOptions, setShowImportOptions] = useState(false);
+  const [importMessage, setImportMessage] = useState('');
+  const [importStatus, setImportStatus] = useState<'idle' | 'success' | 'error'>('idle');
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleClearAll = () => {
     setShowClearConfirm(true);
@@ -36,6 +45,61 @@ export default function Sidebar({
   const confirmClearAll = () => {
     onClearAll();
     setShowClearConfirm(false);
+  };
+
+  const handleExport = () => {
+    try {
+      storageService.downloadExport(username);
+      setImportMessage('Chats exported successfully!');
+      setImportStatus('success');
+      setShowMenu(false);
+      setTimeout(() => setImportStatus('idle'), 3000);
+    } catch (error) {
+      setImportMessage('Failed to export chats');
+      setImportStatus('error');
+    }
+  };
+
+  const handleImportClick = () => {
+    setShowImportOptions(true);
+    setShowMenu(false);
+  };
+
+  const handleImportFile = async (merge: boolean) => {
+    const file = fileInputRef.current?.files?.[0];
+    if (!file) return;
+
+    try {
+      const text = await file.text();
+      const result = storageService.importChats(text, username, merge);
+
+      setImportMessage(result.message);
+      setImportStatus(result.success ? 'success' : 'error');
+      setShowImportOptions(false);
+
+      if (result.success && onChatsImported) {
+        onChatsImported();
+      }
+
+      setTimeout(() => setImportStatus('idle'), 4000);
+    } catch (error) {
+      setImportMessage('Failed to process import file');
+      setImportStatus('error');
+      setTimeout(() => setImportStatus('idle'), 3000);
+    }
+
+    // Reset file input
+    if (fileInputRef.current) {
+      fileInputRef.current.value = '';
+    }
+  };
+
+  const triggerImport = (merge: boolean) => {
+    const input = fileInputRef.current;
+    if (input) {
+      input.onchange = () => handleImportFile(merge);
+      input.click();
+    }
   };
 
   return (
@@ -85,10 +149,25 @@ export default function Sidebar({
                   <MoreVertical size={18} />
                 </button>
                 {showMenu && (
-                  <div className="absolute right-0 mt-2 w-40 bg-gray-800 rounded-lg shadow-lg z-50 border border-gray-700">
+                  <div className="absolute right-0 mt-2 w-48 bg-gray-800 rounded-lg shadow-lg z-50 border border-gray-700">
+                    <button
+                      onClick={handleExport}
+                      disabled={chats.length === 0}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-700 rounded-lg transition flex items-center gap-2 text-blue-400 hover:text-blue-300 text-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                      <Download size={16} />
+                      Export Chats
+                    </button>
+                    <button
+                      onClick={handleImportClick}
+                      className="w-full text-left px-4 py-2 hover:bg-gray-700 rounded-lg transition flex items-center gap-2 text-green-400 hover:text-green-300 text-sm border-t border-gray-700"
+                    >
+                      <Upload size={16} />
+                      Import Chats
+                    </button>
                     <button
                       onClick={handleClearAll}
-                      className="w-full text-left px-4 py-2 hover:bg-gray-700 rounded-lg transition flex items-center gap-2 text-red-400 hover:text-red-300 text-sm"
+                      className="w-full text-left px-4 py-2 hover:bg-gray-700 rounded-lg transition flex items-center gap-2 text-red-400 hover:text-red-300 text-sm border-t border-gray-700"
                     >
                       <Trash2 size={16} />
                       Clear All
@@ -162,6 +241,62 @@ export default function Sidebar({
               </button>
             </div>
           </div>
+        </div>
+      )}
+
+      {/* Hidden file input for import */}
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".json"
+        style={{ display: 'none' }}
+        onChange={(e) => {
+          if (e.target.files?.length) {
+            // File will be handled by import dialog
+          }
+        }}
+      />
+
+      {/* Import Options Modal */}
+      {showImportOptions && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-lg max-w-sm w-full p-6">
+            <h2 className="text-lg font-bold text-gray-900 mb-4">Import Chats</h2>
+            <p className="text-gray-600 mb-6">
+              Choose how to import chats:
+            </p>
+            <div className="space-y-2">
+              <button
+                onClick={() => triggerImport(true)}
+                className="w-full py-2 px-4 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition font-medium text-sm"
+              >
+                Merge with Existing
+              </button>
+              <button
+                onClick={() => triggerImport(false)}
+                className="w-full py-2 px-4 bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition font-medium text-sm"
+              >
+                Replace All
+              </button>
+            </div>
+            <button
+              onClick={() => setShowImportOptions(false)}
+              className="w-full mt-3 py-2 px-4 bg-gray-200 text-gray-900 rounded-lg hover:bg-gray-300 transition font-medium"
+            >
+              Cancel
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Import/Export Status Message */}
+      {importStatus !== 'idle' && (
+        <div className={`fixed bottom-4 right-4 px-4 py-3 rounded-lg shadow-lg z-50 flex items-center gap-2 ${
+          importStatus === 'success' 
+            ? 'bg-green-500 text-white' 
+            : 'bg-red-500 text-white'
+        }`}>
+          <span className="text-sm font-medium">{importMessage}</span>
         </div>
       )}
     </>
