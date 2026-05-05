@@ -36,15 +36,9 @@ class ApiService {
       // Only process text nodes (not HTML tags)
       if (!parts[i].startsWith('<')) {
         // Match scripture references: Book Chapter:Verse or Book Chapter:Verse-Verse
-        // Pattern explanation:
-        // ([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*) - book name (with optional number prefix, allowing multi-word books)
-        // \s+ - required space(s) between book and chapter
-        // (\d+) - chapter number
-        // : - colon
-        // (\d+) - verse number
-        // (?:[-–—\u2013\u2014](\d+))? - optional range (various dash types + end verse)
+        // This regex handles various dash types and spacing variations
         parts[i] = parts[i].replace(
-          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:[-–—\u2013\u2014](\d+))?/g,
+          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:\s*[—–\-~‐–]\s*(\d+))?/g,
           (_match, book, chapter, verse, endVerse) => {
             const bookName = book.trim();
             
@@ -63,6 +57,27 @@ class ApiService {
               : `${bookName} ${chapter}:${verse}`;
             
             return createLink(reference);
+          }
+        );
+        
+        // Handle any remaining ranges that weren't caught (fallback pattern for edge cases)
+        parts[i] = parts[i].replace(
+          /([A-Za-z\d\s]+?)(\d+):(\d+)\s*[—–\-~‐–]\s*(\d+)(?![:\d])/g,
+          (_match) => {
+            // Re-parse to extract components and create link
+            const match = _match.match(/([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)\s*[—–\-~‐–]\s*(\d+)/);
+            if (match) {
+              const bookName = match[1].trim();
+              const chapter = match[2];
+              const verse = match[3];
+              const endVerse = match[4];
+              
+              if (bookName && bookName.match(/^[1-3]?\s*[A-Z]/)) {
+                const reference = `${bookName} ${chapter}:${verse}-${endVerse}`;
+                return createLink(reference);
+              }
+            }
+            return _match;
           }
         );
       }
