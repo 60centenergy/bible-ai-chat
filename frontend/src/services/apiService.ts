@@ -41,9 +41,9 @@ class ApiService {
       // Only process text nodes (not HTML tags)
       if (!parts[i].startsWith('<') && !isAlreadyLinked(parts[i])) {
         // Match scripture references: Book Chapter:Verse or Book Chapter:Verse-Verse
-        // Pattern handles all dash types: hyphen, en-dash, em-dash (marked may convert)
+        // Pattern handles all dash types with flexible spacing
         parts[i] = parts[i].replace(
-          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:[-–—\u2013\u2014]\s*(\d+))?/g,
+          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:\s*[-–—\u2013\u2014]\s*(\d+))?/g,
           (fullMatch, book, chapter, verse, endVerse) => {
             const bookName = book.trim();
             
