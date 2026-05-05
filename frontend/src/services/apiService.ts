@@ -40,11 +40,10 @@ class ApiService {
     for (let i = 0; i < parts.length; i++) {
       // Only process text nodes (not HTML tags)
       if (!parts[i].startsWith('<') && !isAlreadyLinked(parts[i])) {
-        // Single regex that matches both ranges and single verses
-        // Ranges: Book Chapter:Verse-EndVerse
-        // Singles: Book Chapter:Verse
+        // Match scripture references: Book Chapter:Verse or Book Chapter:Verse-Verse
+        // Simple, reliable pattern using just hyphen for ranges
         parts[i] = parts[i].replace(
-          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:[-–—\u2013\u2014]\s*(\d+))?/g,
+          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:-(\d+))?/g,
           (fullMatch, book, chapter, verse, endVerse) => {
             const bookName = book.trim();
             
@@ -59,7 +58,7 @@ class ApiService {
               return fullMatch;
             }
             
-            // Build reference with or without range
+            // Build reference: include range if endVerse exists, otherwise just single verse
             const reference = endVerse 
               ? `${bookName} ${chapter}:${verse}-${endVerse}`
               : `${bookName} ${chapter}:${verse}`;
