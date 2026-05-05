@@ -29,58 +29,69 @@ class ApiService {
       return `<a href="https://www.biblegateway.com/passage/?search=${encodedRef}&version=ESV" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${reference}</a>`;
     };
 
-    // Split HTML to avoid replacing inside tags
-    const parts = html.split(/(<[^>]+>)/);
-    
-    for (let i = 0; i < parts.length; i++) {
-      // Only process text nodes (not HTML tags)
-      if (!parts[i].startsWith('<')) {
-        // FIRST PASS: Match verse RANGES (required dash and end verse)
-        // This must come first so ranges are linked before single verses
-        parts[i] = parts[i].replace(
-          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)\s*[—–\-~‐–\u2013\u2014]\s*(\d+)/g,
-          (_match, book, chapter, verse, endVerse) => {
-            const bookName = book.trim();
-            
-            // Validate book name format (should start with a capital letter)
-            if (!bookName || !bookName.match(/^[1-3]?\s*[A-Z]/)) {
-              return _match;
-            }
-            
-            // Skip common false positives
-            if (bookName.match(/^(and|the|for|with|that|this|which|from|into|upon|all|out|over|under|through|during|being|some|many|other|after|before|between|without|during|about|also|only|even|because|according|including|both)$/i)) {
-              return _match;
-            }
-            
-            const reference = `${bookName} ${chapter}:${verse}-${endVerse}`;
-            return createLink(reference);
-          }
-        );
+    // Helper to check if a match is already inside an <a> tag
+    const isInsideATag = (text: string, matchIndex: number) => {
+      const beforeMatch = text.substring(0, matchIndex);
+      const openTags = (beforeMatch.match(/<a[^>]*>/g) || []).length;
+      const closeTags = (beforeMatch.match(/<\/a>/g) || []).length;
+      return openTags > closeTags;
+    };
+
+    // Process the entire HTML directly without splitting on tags
+    // FIRST PASS: Match verse RANGES (required dash and end verse)
+    // Must come first to catch full ranges before they get partially matched
+    html = html.replace(
+      /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)\s*[—–\-~‐–\u2013\u2014]\s*(\d+)/g,
+      (match, book, chapter, verse, endVerse, offset, fullString) => {
+        // Skip if already inside an <a> tag
+        if (isInsideATag(fullString, offset)) {
+          return match;
+        }
+
+        const bookName = book.trim();
         
-        // SECOND PASS: Match single verses (no range)
-        parts[i] = parts[i].replace(
-          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?![:\d\-—–\-~‐–])/g,
-          (_match, book, chapter, verse) => {
-            const bookName = book.trim();
-            
-            // Validate book name format (should start with a capital letter)
-            if (!bookName || !bookName.match(/^[1-3]?\s*[A-Z]/)) {
-              return _match;
-            }
-            
-            // Skip common false positives
-            if (bookName.match(/^(and|the|for|with|that|this|which|from|into|upon|all|out|over|under|through|during|being|some|many|other|after|before|between|without|during|about|also|only|even|because|according|including|both)$/i)) {
-              return _match;
-            }
-            
-            const reference = `${bookName} ${chapter}:${verse}`;
-            return createLink(reference);
-          }
-        );
+        // Validate book name format (should start with a capital letter)
+        if (!bookName || !bookName.match(/^[1-3]?\s*[A-Z]/)) {
+          return match;
+        }
+        
+        // Skip common false positives
+        if (bookName.match(/^(and|the|for|with|that|this|which|from|into|upon|all|out|over|under|through|during|being|some|many|other|after|before|between|without|during|about|also|only|even|because|according|including|both)$/i)) {
+          return match;
+        }
+        
+        const reference = `${bookName} ${chapter}:${verse}-${endVerse}`;
+        return createLink(reference);
       }
-    }
+    );
+
+    // SECOND PASS: Match single verses (no range)
+    html = html.replace(
+      /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?![:\d\-—–\-~‐–\u2013\u2014<])/g,
+      (match, book, chapter, verse, offset, fullString) => {
+        // Skip if already inside an <a> tag
+        if (isInsideATag(fullString, offset)) {
+          return match;
+        }
+
+        const bookName = book.trim();
+        
+        // Validate book name format (should start with a capital letter)
+        if (!bookName || !bookName.match(/^[1-3]?\s*[A-Z]/)) {
+          return match;
+        }
+        
+        // Skip common false positives
+        if (bookName.match(/^(and|the|for|with|that|this|which|from|into|upon|all|out|over|under|through|during|being|some|many|other|after|before|between|without|during|about|also|only|even|because|according|including|both)$/i)) {
+          return match;
+        }
+        
+        const reference = `${bookName} ${chapter}:${verse}`;
+        return createLink(reference);
+      }
+    );
     
-    return parts.join('');
+    return html;
   }
 
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
