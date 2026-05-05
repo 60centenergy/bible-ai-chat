@@ -13,6 +13,29 @@ class ApiService {
     }
     
     console.log(`📡 Using Groq API directly (Model: ${this.groqModel})`);
+    
+    // Configure marked with custom renderer for scripture links
+    this.setupMarkedRenderer();
+  }
+
+  private setupMarkedRenderer() {
+    const renderer = {
+      text(text: string) {
+        // Convert scripture references to links
+        // Pattern: Book Chapter:Verse or Book Chapter:Verse-Verse
+        const scripturePattern = /([1-3]?\s?[A-Za-z]+)\s+(\d+):(\d+)(?:-(\d+))?/g;
+        
+        return text.replace(scripturePattern, (_match, book, chapter, verse, endVerse) => {
+          const reference = endVerse 
+            ? `${book.trim()} ${chapter}:${verse}-${endVerse}` 
+            : `${book.trim()} ${chapter}:${verse}`;
+          const encodedRef = encodeURIComponent(reference);
+          return `<a href="https://www.biblegateway.com/passage/?search=${encodedRef}&version=ESV" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${reference}</a>`;
+        });
+      }
+    };
+    
+    marked.use({ renderer: renderer as any });
   }
 
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
