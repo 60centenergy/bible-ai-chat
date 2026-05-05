@@ -45,7 +45,8 @@ class ApiService {
         parts[i] = parts[i].replace(
           /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:\s*[\-–—‐‑‒\u2010\u2011\u2012\u2013\u2014\u2212]\s*(\d+))?/g,
           (fullMatch, book, chapter, verse, endVerse) => {
-            const bookName = book.trim();
+            // Normalize whitespace: replace all Unicode whitespace with regular spaces
+            let bookName = book.trim().replace(/\s+/g, ' ');
             
             // Validate: must start with capital letter or number
             if (!bookName || !bookName.match(/^[1-3]?\s*[A-Z]/)) {
