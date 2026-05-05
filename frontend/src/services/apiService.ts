@@ -29,63 +29,39 @@ class ApiService {
       return `<a href="https://www.biblegateway.com/passage/?search=${encodedRef}&version=ESV" target="_blank" rel="noopener noreferrer" class="text-blue-600 hover:text-blue-800 underline">${reference}</a>`;
     };
 
-    // Pattern: Match all scripture references (Book Chapter:Verse or Book Chapter:Verse-Verse)
-    // Followed by space, punctuation, or HTML tag
-    const scripturePattern = /([1-3]?\s*[A-Za-z]+)\s+(\d+):(\d+)(?:-(\d+))?(?=[\s\–\-\.\,\;\:\<\"\'\)\n]|$)/g;
+    // Split HTML to avoid replacing inside tags
+    const parts = html.split(/(<[^>]+>)/);
     
-    let lastIndex = 0;
-    let result = '';
-    let match;
-    
-    while ((match = scripturePattern.exec(html)) !== null) {
-      // Check if already inside a link or tag
-      const beforeMatch = html.substring(0, match.index);
-      
-      // Count unclosed <a> tags before this position
-      const openAnchorTags = (beforeMatch.match(/<a[^>]*>/g) || []).length;
-      const closeAnchorTags = (beforeMatch.match(/<\/a>/g) || []).length;
-      
-      // Skip if already inside an anchor tag
-      if (openAnchorTags > closeAnchorTags) {
-        result += html.substring(lastIndex, match.index + match[0].length);
-      } else {
-        // Skip if inside <strong> tag as it will be handled separately
-        const openStrongTags = (beforeMatch.match(/<strong[^>]*>/g) || []).length;
-        const closeStrongTags = (beforeMatch.match(/<\/strong>/g) || []).length;
-        
-        if (openStrongTags > closeStrongTags) {
-          // Inside strong tag, skip
-          result += html.substring(lastIndex, match.index + match[0].length);
-        } else {
-          // Convert to link
-          const book = match[1].trim();
-          const chapter = match[2];
-          const verse = match[3];
-          const endVerse = match[4];
-          const reference = endVerse 
-            ? `${book} ${chapter}:${verse}-${endVerse}` 
-            : `${book} ${chapter}:${verse}`;
-          
-          result += html.substring(lastIndex, match.index);
-          result += createLink(reference);
-        }
+    for (let i = 0; i < parts.length; i++) {
+      // Only process text nodes (not HTML tags)
+      if (!parts[i].startsWith('<')) {
+        // Match scripture references: Book Chapter:Verse or Book Chapter:Verse-Verse
+        parts[i] = parts[i].replace(
+          /([1-3]?\s*[A-Za-z\s]+)\s+(\d+):(\d+)(?:-(\d+))?/g,
+          (_match, book, chapter, verse, endVerse) => {
+            const bookName = book.trim();
+            
+            // Validate book name format (should start with a capital letter)
+            if (!bookName || !bookName.match(/^[1-3]?\s*[A-Z]/)) {
+              return _match;
+            }
+            
+            // Skip common false positives
+            if (bookName.match(/^(and|the|for|with|that|this|which|from|into|upon|all|out|over|under|through|during|being|some|many|other|after|before|between|without|during|about|also|only|even|because|according|including|both)$/i)) {
+              return _match;
+            }
+            
+            const reference = endVerse
+              ? `${bookName} ${chapter}:${verse}-${endVerse}`
+              : `${bookName} ${chapter}:${verse}`;
+            
+            return createLink(reference);
+          }
+        );
       }
-      lastIndex = scripturePattern.lastIndex;
     }
     
-    result += html.substring(lastIndex);
-    
-    // Finally, handle scripture references inside <strong> tags
-    result = result.replace(/<strong>([1-3]?\s*[A-Za-z]+)\s+(\d+):(\d+)(?:-(\d+))?<\/strong>/g, 
-      (_match, book, chapter, verse, endVerse) => {
-        const reference = endVerse 
-          ? `${book.trim()} ${chapter}:${verse}-${endVerse}` 
-          : `${book.trim()} ${chapter}:${verse}`;
-        return `<strong>${createLink(reference)}</strong>`;
-      }
-    );
-    
-    return result;
+    return parts.join('');
   }
 
   async sendMessage(request: ChatRequest): Promise<ChatResponse> {
