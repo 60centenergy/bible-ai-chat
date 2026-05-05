@@ -1,4 +1,5 @@
 import { ChatRequest, ChatResponse } from '../types';
+import { marked } from 'marked';
 
 class ApiService {
   private groqApiKey: string;
@@ -99,9 +100,12 @@ Only reference or emphasize the core beliefs above when the user's question or t
         throw new Error('No response from AI model');
       }
 
+      // Convert markdown to HTML using marked
+      const htmlContent = await marked(assistantMessage);
+
       return {
         content: assistantMessage,
-        formattedContent: assistantMessage // Frontend will handle markdown rendering
+        formattedContent: htmlContent
       };
     } catch (error) {
       if (error instanceof Error) {
