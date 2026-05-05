@@ -121,13 +121,20 @@ export const storageService = {
 
       const importData = JSON.parse(jsonData);
 
-      // Validate structure
-      if (!Array.isArray(importData.chats)) {
-        return { success: false, message: 'Invalid export file format' };
+      // Handle both formats: multi-chat export (chats array) or single-chat export (chat object)
+      let incomingChats: Chat[] = [];
+      
+      if (Array.isArray(importData.chats)) {
+        // Multi-chat export format
+        incomingChats = importData.chats as Chat[];
+      } else if (importData.chat && typeof importData.chat === 'object') {
+        // Single-chat export format
+        incomingChats = [importData.chat as Chat];
+      } else {
+        return { success: false, message: 'Invalid export file format. Missing chats or chat data.' };
       }
 
       let chats = merge ? this.getAllChats(username) : [];
-      const incomingChats = importData.chats as Chat[];
 
       if (merge) {
         // Merge: add incoming chats, updating existing ones by ID
