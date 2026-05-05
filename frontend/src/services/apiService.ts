@@ -42,9 +42,9 @@ class ApiService {
         // (\d+) - chapter number
         // : - colon
         // (\d+) - verse number
-        // (?:-(\d+))? - optional range (hyphen + end verse)
+        // (?:[-–—\u2013\u2014](\d+))? - optional range (various dash types + end verse)
         parts[i] = parts[i].replace(
-          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:-(\d+))?/g,
+          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:[-–—\u2013\u2014](\d+))?/g,
           (_match, book, chapter, verse, endVerse) => {
             const bookName = book.trim();
             
