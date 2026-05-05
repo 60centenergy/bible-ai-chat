@@ -36,8 +36,15 @@ class ApiService {
       // Only process text nodes (not HTML tags)
       if (!parts[i].startsWith('<')) {
         // Match scripture references: Book Chapter:Verse or Book Chapter:Verse-Verse
+        // Pattern explanation:
+        // ([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*) - book name (with optional number prefix, allowing multi-word books)
+        // \s+ - required space(s) between book and chapter
+        // (\d+) - chapter number
+        // : - colon
+        // (\d+) - verse number
+        // (?:-(\d+))? - optional range (hyphen + end verse)
         parts[i] = parts[i].replace(
-          /([1-3]?\s*[A-Za-z\s]+)\s+(\d+):(\d+)(?:-(\d+))?/g,
+          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:-(\d+))?/g,
           (_match, book, chapter, verse, endVerse) => {
             const bookName = book.trim();
             
