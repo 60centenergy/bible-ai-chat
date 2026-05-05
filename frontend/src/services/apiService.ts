@@ -35,10 +35,10 @@ class ApiService {
     for (let i = 0; i < parts.length; i++) {
       // Only process text nodes (not HTML tags)
       if (!parts[i].startsWith('<')) {
-        // Match scripture references: Book Chapter:Verse or Book Chapter:Verse-Verse
-        // This regex handles various dash types and spacing variations
+        // FIRST PASS: Match verse RANGES (required dash and end verse)
+        // This must come first so ranges are linked before single verses
         parts[i] = parts[i].replace(
-          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?:\s*[—–\-~‐–]\s*(\d+))?/g,
+          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)\s*[—–\-~‐–\u2013\u2014]\s*(\d+)/g,
           (_match, book, chapter, verse, endVerse) => {
             const bookName = book.trim();
             
@@ -52,32 +52,29 @@ class ApiService {
               return _match;
             }
             
-            const reference = endVerse
-              ? `${bookName} ${chapter}:${verse}-${endVerse}`
-              : `${bookName} ${chapter}:${verse}`;
-            
+            const reference = `${bookName} ${chapter}:${verse}-${endVerse}`;
             return createLink(reference);
           }
         );
         
-        // Handle any remaining ranges that weren't caught (fallback pattern for edge cases)
+        // SECOND PASS: Match single verses (no range)
         parts[i] = parts[i].replace(
-          /([A-Za-z\d\s]+?)(\d+):(\d+)\s*[—–\-~‐–]\s*(\d+)(?![:\d])/g,
-          (_match) => {
-            // Re-parse to extract components and create link
-            const match = _match.match(/([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)\s*[—–\-~‐–]\s*(\d+)/);
-            if (match) {
-              const bookName = match[1].trim();
-              const chapter = match[2];
-              const verse = match[3];
-              const endVerse = match[4];
-              
-              if (bookName && bookName.match(/^[1-3]?\s*[A-Z]/)) {
-                const reference = `${bookName} ${chapter}:${verse}-${endVerse}`;
-                return createLink(reference);
-              }
+          /([1-3]?\s*[A-Za-z]+(?:\s+[A-Za-z]+)*)\s+(\d+):(\d+)(?![:\d\-—–\-~‐–])/g,
+          (_match, book, chapter, verse) => {
+            const bookName = book.trim();
+            
+            // Validate book name format (should start with a capital letter)
+            if (!bookName || !bookName.match(/^[1-3]?\s*[A-Z]/)) {
+              return _match;
             }
-            return _match;
+            
+            // Skip common false positives
+            if (bookName.match(/^(and|the|for|with|that|this|which|from|into|upon|all|out|over|under|through|during|being|some|many|other|after|before|between|without|during|about|also|only|even|because|according|including|both)$/i)) {
+              return _match;
+            }
+            
+            const reference = `${bookName} ${chapter}:${verse}`;
+            return createLink(reference);
           }
         );
       }
