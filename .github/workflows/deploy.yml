@@ -1,0 +1,48 @@
+name: Build and Deploy
+
+on:
+  push:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v3
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Create .env file
+        run: |
+          cat > .env << EOF
+          GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          GROQ_MODEL=openai/gpt-oss-120b
+          NODE_ENV=production
+          PORT=5000
+          CORS_ORIGIN=*
+          VITE_API_URL=http://localhost:5000/api
+          EOF
+
+      - name: Install dependencies
+        run: npm install
+
+      - name: Install frontend dependencies
+        run: cd frontend && npm install && cd ..
+
+      - name: Build frontend
+        run: cd frontend && npm run build && cd ..
+
+      - name: Copy dist to docs
+        run: cp -r frontend/dist/* docs/
+
+      - name: Commit and push changes
+        run: |
+          git config --local user.email "action@github.com"
+          git config --local user.name "GitHub Action"
+          git add docs/
+          git commit -m "Build and deploy frontend" || true
+          git push
