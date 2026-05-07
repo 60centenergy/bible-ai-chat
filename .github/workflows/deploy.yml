@@ -16,17 +16,25 @@ jobs:
         with:
           node-version: '18'
 
-      - name: Create .env file
+      - name: Create .env file in root
         run: |
           cat > .env << EOF
           GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
-          VITE_GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
           GROQ_MODEL=openai/gpt-oss-120b
           NODE_ENV=production
           PORT=5000
           CORS_ORIGIN=*
           VITE_API_URL=http://localhost:5000/api
           EOF
+
+      - name: Create .env file in frontend
+        run: |
+          cat > frontend/.env << EOF
+          VITE_GROQ_API_KEY=${{ secrets.GROQ_API_KEY }}
+          EOF
+
+      - name: Verify env var is set
+        run: cat frontend/.env
 
       - name: Install dependencies
         run: npm install
